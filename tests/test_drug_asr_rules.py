@@ -76,6 +76,21 @@ def test_extract_hyps_out() -> None:
     print("01 --hyps-out: OK")
 
 
+def test_collect_accent_target() -> None:
+    """A clip whose label is an accent sibling of its bucket's name keeps that label as its
+    target: 18 labels write ``périosté`` and 12 ``périoste``, so the bucket is named
+    ``périosté``, and the one ``périos`` hyp (label ``périoste``) must not become a rule to
+    ``périosté``. Before the fix 01 compared the folded target with the folded key and
+    dropped it."""
+    mod = _load("01_extract_drug_errors.py")
+    pairs = ([("lésion du périosté", "lésion du périosté")] * 18 + [("lésion du périoste", "lésion du périoste")] * 12
+             + [("lésion du périoste", "lésion du périos")])
+    report = mod.collect(pairs, {"perioste": None})
+    assert list(report) == ["périosté"], report
+    assert report["périosté"]["targets"] == {"périos": "périoste"}, report
+    print("01 collect accent target: OK")
+
+
 def test_build_fix_rules() -> None:
     _run_doctests("02_build_fix_rules.py")
 
@@ -100,6 +115,7 @@ def test_build_convention_fixes() -> None:
 if __name__ == "__main__":
     test_extract_drug_errors()
     test_extract_hyps_out()
+    test_collect_accent_target()
     test_build_fix_rules()
     test_merge_rules()
     test_drop_unk_variants()

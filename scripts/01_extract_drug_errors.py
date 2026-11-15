@@ -322,8 +322,11 @@ def collect(pairs, lex: dict[str, str | None]) -> dict[str, dict]:
         report[name] = {
             "n_seen": seen[key], "n_correct": correct[key], "n_deleted": deleted[key],
             "errors": dict(errors[key].most_common()),
-            # Only the variants whose fix is not the plain drug name (glued elisions).
-            "targets": {v: t for v, t in tg.items() if fold(t) != key},
+            # Only the variants whose fix is not the displayed name: glued elisions, and
+            # accent siblings, which the fold-based key would merge into the name
+            # (périos -> périoste, not the bucket's majority spelling périosté). Case alone
+            # does not count, the name already carries the casing table's choice.
+            "targets": {v: t for v, t in tg.items() if t.casefold() != name.casefold()},
         }
     return report
 
