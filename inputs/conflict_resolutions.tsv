@@ -1,0 +1,60 @@
+# Hand decisions for variants that several rule files rewrite differently (decided 2026-11-15).
+# variant<TAB>context<TAB>replacement, first matching line of a variant wins.
+# context: * = anywhere; after:WORDS = only right after these words (the words are kept, with
+#   after:de the "de " is consumed when the replacement starts with d'); before_vowel = only when
+#   the next word starts with a vowel or h (the space after the variant is consumed).
+# An empty replacement means: no rule at all for this variant in that context (too ambiguous).
+# Every variant listed here is removed from the learned rule files; the surviving lines become
+# manual rules.
+albuffine	*	nalbuphine
+chromoglycémique	*	cromoglicique
+hertapénème	*	ertapenem
+ostradiol	*	estradiol
+holodatérol	*	olodaterol
+l'anadelumab	*	lanadelumab
+méthylaminolévulinate	*	méthyle aminolévulinate
+frontoorbitaire	*	fronto-orbitaire
+musculaponévrotique	*	musculoaponévrotique
+périos	*	périoste
+prictest	*	prick-test
+pyogenèse	*	pyogenes
+protéinur	*	
+dictère	*	d'ictère
+démolyse	after:de	d'hémolyse
+démolyse	*	d'hémolyse
+angorde	*	angor de
+trocarde	before_vowel	trocart d'
+trocarde	*	trocart de
+avirus	*	à virus
+influenzaea	*	influenzae
+déductiles	after:de	d'Eductyl
+déductiles	*	d'Eductyl
+intenseur	*	en tenseur
+areus	after:l'	Aerius
+areus	after:sous	Aerius
+areus	*	aureus
+neubopathie	*	
+singulaire	after:engagement	cingulaire
+singulaire	after:gyrus	cingulaire
+singulaire	after:cortex	cingulaire
+singulaire	*	
+lasec	after:signe de	Lasègue
+lasec	*	
+morganie	*	morganii
+matro	*	
+gégard	*	
+oscopie	*	
+acula	*	
+zomique	*	
+lambes	*	
+lodose	after:scanner	low-dose
+lodose	after:imagerie	low-dose
+lodose	after:TDM	low-dose
+lodose	after:scan	low-dose
+lodose	after:TAP	low-dose
+lodose	after:dit	low-dose
+lodose	after:dits	low-dose
+lodose	after:dite	low-dose
+lodose	after:dites	low-dose
+lodose	after:de la	lordose
+lodose	*	Lodoz
