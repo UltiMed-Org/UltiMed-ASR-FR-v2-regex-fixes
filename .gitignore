@@ -1,2 +1,4 @@
 __pycache__/
 .pytest_cache/
+rejected/
+v1/*rejected*
