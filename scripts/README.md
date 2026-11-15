@@ -40,7 +40,7 @@ Apply the rules with `fix = compile_rules(rules)` then `fix(text)` from `02_buil
 
 ## v2 rules (`rules/`, 2026-11-13, one list per subset)
 
-Rebuilt with Claude Code for the v2 release, from the v2 model alone (mix7, fp32 ONNX) transcribing all 602,776 clips of the v2 corpus, and split by subset: `rules/drug_fix_rules.jsonl`, `rules/dictionary_fix_rules.jsonl`, `rules/parhaf_fix_rules.jsonl`, `rules/parrot_fix_rules.jsonl`, `rules/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` in `rejected/` (plus `rejected/drug_asr_errors.json`). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt: apply it first, as before.
+Rebuilt with Claude Code for the v2 release, from the v2 model alone (mix7, fp32 ONNX) transcribing all 602,776 clips of the v2 corpus, and split by subset: `rules/drug_fix_rules.jsonl`, `rules/dictionary_fix_rules.jsonl`, `rules/parhaf_fix_rules.jsonl`, `rules/parrot_fix_rules.jsonl`, `rules/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` in `rejected/` (plus `rejected/drug_asr_errors.json`). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt from transcripts (05 builds it from `inputs/`): apply it LAST, after the drug and term files (it went first until 2026-11-15, see "Hand-written rules").
 
 Every replacement comes from the v2 labels (02 copies the label text a rule was learned from), so the v1 caveat about old spellings no longer applies. Note the v2 labels themselves carry both spellings of some drugs (`bevacizumab` 363 vs `bévacizumab` 151, `perindopril` 1,055 vs `périndopril` 1,672 in `full.jsonl`), so the accent a rule writes depends on the clip it was learned from.
 
@@ -199,7 +199,7 @@ A rule's end bound lets it fire right before an apostrophe, which real fixes nee
 
 ## Hand-written rules (`05_build_manual_rules.py`, 2026-10-07)
 
-`manual_fixes.tsv` lists fixes the author asked for directly (`variant<TAB>replacement`), and `05_build_manual_rules.py` turns it into `manual_fix_rules.jsonl` with the same patterns and merging as the learned rules. Consumers apply it FIRST, before `drug_fix_rules.jsonl` and `term_fix_rules.jsonl`, so a hand fix wins on the same words: `lodose` / `lodoses` -> `lowdose` (the learned drug rules turned `lodose` into the brand `Lodoz`), and `ceresta` -> `Seresta` (already learned, kept explicit). These rules are not mined or overcorrection-checked like the others, and the published benchmarks ran without them. Add a line to the TSV and rerun:
+`manual_fixes.tsv` lists fixes the author asked for directly (`variant<TAB>replacement`), and `05_build_manual_rules.py` turns it into `manual_fix_rules.jsonl` with the same patterns and merging as the learned rules. Consumers applied it FIRST, before `drug_fix_rules.jsonl` and `term_fix_rules.jsonl`, so a hand fix won on the same words: `lodose` / `lodoses` -> `lowdose` (the learned drug rules turned `lodose` into the brand `Lodoz`), and `ceresta` -> `Seresta` (already learned, kept explicit). Since 2026-11-15 it is applied LAST instead, so the label conventions below also respell what a learned rule wrote; the variants the files fought over are decided in `inputs/conflict_resolutions.tsv` and removed from the learned files (see "Conflict decisions"), so order no longer settles them (`lodose` is now `low-dose` after `scanner`, `Lodoz` elsewhere). These rules are not mined or overcorrection-checked like the others, and the published benchmarks ran without them. Add a line to the TSV and rerun:
 
 ```bash
 uv run scripts/05_build_manual_rules.py
@@ -215,7 +215,7 @@ uv run scripts/06_build_convention_fixes.py path/to/variants.tsv \
 uv run scripts/05_build_manual_rules.py
 ```
 
-Caveat: the drug and term rules run after these and their replacements come from the v1 labels, so they can write an old spelling back (`bévacizumab`). Rebuild them on v2 labels.
+Caveat (2026-10-08): the drug and term rules ran after these and their replacements came from the v1 labels, so they could write an old spelling back (`bévacizumab`). Since 2026-11-15 the manual file, conventions included, is applied after the learned files, so a learned replacement in an old spelling is respelled on the way out.
 
 Written with Claude Code.
 

@@ -43,10 +43,10 @@ the whitespace after it, minus one space if a word character or hyphen follows.
 
 Usage::
 
-    uv run scripts/apply_lookup.py lookup/manual_fix_rules.lookup.json lookup/drug_fix_rules.lookup.json \\
+    uv run scripts/apply_lookup.py lookup/drug_fix_rules.lookup.json lookup/manual_fix_rules.lookup.json \\
         --in hyps.txt --out fixed.txt
 
-Lookups apply in the order given, one text per input line.
+Lookups apply in the order given (the manual file last), one text per input line.
 
 This file was written by Claude Code.
 """

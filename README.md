@@ -21,7 +21,7 @@ These are the **v2** rules, built on 2026-11-13 from the v2 model alone (the "mi
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 154 | 121 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
-The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,116 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. So the order matters: apply the manual file first (a hand fix wins over a learned one), then the drug file. TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
+The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,116 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
 
 ### Measured effect
 
@@ -100,7 +100,7 @@ Matching rules, which `scripts/apply_lookup.py` (no regex, under 300 lines with 
 Only rules that match change anything, so a consumer can build one dictionary from every key to its `(rule index, key rank)` pairs, find all matches in one pass, apply the lowest-index matching rule, and repeat with the rules after it. That is what `apply_lookup.py` does:
 
 ```bash
-uv run scripts/apply_lookup.py lookup/manual_fix_rules.lookup.json lookup/drug_fix_rules.lookup.json \
+uv run scripts/apply_lookup.py lookup/drug_fix_rules.lookup.json lookup/manual_fix_rules.lookup.json \
   --in hyps.txt --out fixed.txt   # one text per line, lookups in the order given
 ```
 

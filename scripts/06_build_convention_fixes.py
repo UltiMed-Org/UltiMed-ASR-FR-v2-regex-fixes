@@ -27,8 +27,8 @@ drug name (``injection BEVACIZUMAB``), and the rule, which keeps only the initia
 would drop ``bévacizumab`` for them.
 
 ``05_build_manual_rules.py`` reads this file after ``manual_fixes.tsv`` (a hand fix
-wins), so the rules ship in ``manual_fix_rules.jsonl``, applied before the drug and term
-rules.
+wins), so the rules ship in ``manual_fix_rules.jsonl``, applied after the drug and term
+rules (so they also respell what a learned rule wrote).
 
     uv run scripts/06_build_convention_fixes.py path/to/variants.tsv \
         --labels 99_hf_release/data/NeMO_files/full.jsonl --labels 99_hf_release/data/NeMO_files/PARROT/full.jsonl
