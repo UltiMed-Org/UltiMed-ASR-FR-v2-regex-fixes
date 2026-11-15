@@ -51,7 +51,7 @@ TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author
 | `inputs/` | the hand-written `manual_fixes.tsv` and the generated `convention_fixes.tsv`, source of `manual_fix_rules.jsonl` |
 | `v1/` | the v1 outputs, kept for comparison: `drug_fix_rules.jsonl`, `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list), their rejected lists and the per-model `drug_asr_errors*.json` |
 | `scripts/` | the build chain (01 to 07, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
-| `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence), plus a fixture of 299 real v2 transcripts |
+| `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
 
 The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts) checkout. By default they look for it next to this repository; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
 
@@ -125,7 +125,7 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 - the doctests, and that `lookup/` is up to date with `rules/` (rebuilt into a temporary dir and compared byte for byte);
 - 54 hand-written edge texts (elisions, curly apostrophes, hyphens, whitespace runs, capitals, titles, `aujourd'hui`-like words) on a small rule set built for them;
 - 3,000 random texts per file, made of the file's own variants (randomly upper-cased, accented, cut short or re-separated) glued by spaces, hyphens, apostrophes, elisions and titles;
-- 299 real v2 transcripts (`tests/fixtures/hyps_sample.txt`: for each file, lines that file changes, plus 100 lines no file changes), or any corpus via `ULTIMED_LOOKUP_CORPUS` (a `.jsonl` with a `hyp` field, or a `.txt`) and `ULTIMED_LOOKUP_LIMIT`.
+- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 4,854, dictionary 10,000, PARHAF 3,960, PARROT 3,000, acronyms 3,000), so every variant of every file but the dictionary is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
 
 All pass with 0 mismatches (2026-11-15). On 20,093 v2 transcripts (every 30th line of the full corpus), the regex and lookup outputs were also identical for all six files (manual 175 lines changed, drug 479, dictionary 3,419, PARHAF 559, PARROT 35, acronyms 12). The reference applier is slower than the indexed regexes in Python (about 0.8 to 1.9 ms per line per file, vs 0.1 to 1.2 ms for `compile_rules`); it is written for clarity, not speed.
 

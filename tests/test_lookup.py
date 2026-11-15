@@ -14,10 +14,13 @@ output of the regex rules (``rules/``, 02_build_fix_rules.py ``apply_rules``).
   first-alternative-wins order, chained rules, keys ending on an apostrophe).
 - ``test_fuzz``: random texts stitched from the real variants with random separators,
   apostrophes, case and accents, against all six rule files.
-- ``test_corpus``: the committed sample of real v2-model transcripts
-  (``tests/fixtures/hyps_sample.txt``), against all six rule files. Set
-  ``ULTIMED_LOOKUP_CORPUS`` to a hyps ``.jsonl`` (field ``hyp``) or a ``.txt`` (one text per
-  line) to run the whole file instead, e.g. the 602k-clip whole-corpus transcription;
+- ``test_corpus``: by default a synthetic corpus, generated at test time (seeded, so the
+  same texts every run) from each rule file's own variants placed in invented French
+  carrier sentences (start and end of text, after an elision, next to punctuation,
+  capitalised, after a title, two variants side by side), each file checked on its own
+  texts. No real transcript is committed. Set ``ULTIMED_LOOKUP_CORPUS`` to a hyps
+  ``.jsonl`` (field ``hyp``) or a ``.txt`` (one text per line) to run real transcripts
+  instead, against all six rule files, e.g. the 602k-clip whole-corpus transcription;
   ``ULTIMED_LOOKUP_LIMIT=N`` keeps the first N texts.
 
 Each prints lines, changed lines and mismatches per rule file and fails on any mismatch.
@@ -129,35 +132,82 @@ def test_edge_cases() -> None:
     _compare("edge cases", EDGE_TEXTS, lambda t: b.apply_rules(t, rules), lk)
 
 
+_SWAPS = {"e": "éÉE", "a": "àÂ", "c": "Ç", "o": "Ô", "i": "Ï", "u": "Ù", "s": "ſ", "k": "K", "n": "ñ"}
+
+
+def _variants(rules: list[dict]) -> list[str]:
+    return [v for r in rules for v in (r.get("variants") or [r["variant"]])]
+
+
+def _mangle(v: str, rng: random.Random) -> str:
+    """``v`` randomly upper-cased or capitalised, with one letter swapped for an accented or
+    look-alike one, re-separated, or cut short."""
+    if rng.random() < 0.3:
+        v = v.upper() if rng.random() < 0.5 else v.capitalize()
+    if rng.random() < 0.3:
+        i = rng.randrange(len(v))
+        v = v[:i] + rng.choice(_SWAPS.get(v[i].lower(), v[i])) + v[i + 1:]
+    if rng.random() < 0.2:
+        v = v.replace(" ", rng.choice(["-", "  ", " - "]))
+    if rng.random() < 0.1:
+        v = v[: rng.randrange(1, len(v) + 1)]
+    return v
+
+
 def _fuzz_texts(rules: list[dict], n: int, seed: int) -> list[str]:
     """Texts made of real variants (or pieces of them) glued by random separators."""
     rng = random.Random(seed)
-    variants = [v for r in rules for v in (r.get("variants") or [r["variant"]])]
+    variants = _variants(rules)
     titles = [t.capitalize() for t in b._TITLES]
     seps = [" ", "  ", "-", " - ", "'", "’", "' ", ". ", ", ", " ", "\t", "", "d'", "l’", "qu'"]
-    swaps = {"e": "éÉE", "a": "àÂ", "c": "Ç", "o": "Ô", "i": "Ï", "u": "Ù", "s": "ſ", "k": "K", "n": "ñ"}
-
-    def mangle(v: str) -> str:
-        if rng.random() < 0.3:
-            v = v.upper() if rng.random() < 0.5 else v.capitalize()
-        if rng.random() < 0.3:
-            i = rng.randrange(len(v))
-            v = v[:i] + rng.choice(swaps.get(v[i].lower(), v[i])) + v[i + 1:]
-        if rng.random() < 0.2:
-            v = v.replace(" ", rng.choice(["-", "  ", " - "]))
-        if rng.random() < 0.1:
-            v = v[: rng.randrange(1, len(v) + 1)]
-        return v
-
     out = []
     for _ in range(n):
         parts = []
         for _ in range(rng.randint(1, 4)):
             if rng.random() < 0.1:
                 parts.append(rng.choice(titles) + " ")
-            parts.append(mangle(rng.choice(variants)))
+            parts.append(_mangle(rng.choice(variants), rng))
             parts.append(rng.choice(seps))
         out.append("".join(parts))
+    return out
+
+
+# Invented carrier sentences for the synthetic corpus ({x}, {y}: variants, {X}, {Y}: capitalised).
+CARRIERS = (
+    "Le patient présente {x} depuis hier.",
+    "{X} a été introduit ce matin.",
+    "Traitement habituel : {x}",
+    "{x}",
+    "On retrouve l'{x} à l'examen clinique.",
+    "Pas d’{x} ni de {y} à ce jour.",
+    "Il faut savoir qu'{x} reste possible.",
+    "Arrêt de {x}, relais par {y}.",
+    "Sous {x} {y} depuis mai.",
+    "({x}) puis « {y} ».",
+    "Bilan : {x}; {y}!",
+    "le docteur {X} a vu la patiente",
+    "Mme {X} est revenue en consultation pour {y}.",
+    "Antécédents : {x}-{y}, {x}?",
+    "{X}. {Y}.",
+)
+
+
+def _carrier_texts(rules: list[dict], n: int, seed: int) -> list[str]:
+    """``n`` invented sentences, each a ``CARRIERS`` template filled with the file's variants.
+
+    The variants are taken in a seeded shuffle, cycled, so every variant appears once ``n``
+    reaches their number; a quarter of them go through ``_mangle`` first.
+    """
+    rng = random.Random(seed)
+    variants = _variants(rules)
+    rng.shuffle(variants)
+    out = []
+    for i in range(n):
+        x = variants[i % len(variants)]
+        y = rng.choice(variants)
+        if rng.random() < 0.25:
+            x = _mangle(x, rng)
+        out.append(CARRIERS[i % len(CARRIERS)].format(x=x, y=y, X=x.capitalize(), Y=y.capitalize()))
     return out
 
 
@@ -171,11 +221,8 @@ def test_fuzz() -> None:
         _compare(f"fuzz {name}", _fuzz_texts(rules, 3000, seed=len(name)), fix, lk)
 
 
-def _corpus() -> list[str]:
-    path = os.environ.get("ULTIMED_LOOKUP_CORPUS")
+def _corpus(path: str) -> list[str]:
     limit = int(os.environ.get("ULTIMED_LOOKUP_LIMIT", "0")) or None
-    if not path:
-        return (REPO / "tests" / "fixtures" / "hyps_sample.txt").read_text(encoding="utf-8").splitlines()
     out = []
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -186,10 +233,16 @@ def _corpus() -> list[str]:
 
 
 def test_corpus() -> None:
-    texts = _corpus()
-    for name in FILES:
+    """Real transcripts from ``ULTIMED_LOOKUP_CORPUS`` against every file, or else each file
+    against its own synthetic sentences (its variant count, at least 3,000 and at most 10,000)."""
+    path = os.environ.get("ULTIMED_LOOKUP_CORPUS")
+    texts = _corpus(path) if path else None
+    for seed, name in enumerate(FILES):
+        rules = _rules(name)
         lk = apply.Lookup.load(REPO / "lookup" / f"{name}_fix_rules.lookup.json")
-        _compare(f"corpus {name}", texts, b.compile_rules(_rules(name)), lk)
+        if not path:
+            texts = _carrier_texts(rules, min(max(3000, len(_variants(rules))), 10000), seed=seed)
+        _compare(f"corpus {name}{'' if path else ' (synthetic)'}", texts, b.compile_rules(rules), lk)
 
 
 if __name__ == "__main__":
