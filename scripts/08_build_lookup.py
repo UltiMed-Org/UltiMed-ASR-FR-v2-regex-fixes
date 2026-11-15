@@ -217,6 +217,46 @@ def lookup_path(src: Path) -> Path:
     return DEFAULT_DIR / f"{src.stem}.lookup.json"
 
 
+def build_lookup_file(src: Path, dst: Path | None = None) -> Path:
+    """Write the lookup form of the rule file ``src`` and return where it went.
+
+    Shared by this script's CLI and by ``05_build_manual_rules.py``, which refreshes the
+    manual lookup each time it rewrites the manual rules, so the two never drift apart.
+
+    Parameters
+    ----------
+    src : Path
+        A ``*_fix_rules.jsonl`` file.
+    dst : Path, optional
+        Output file; default ``lookup/<src stem>.lookup.json``.
+
+    Returns
+    -------
+    Path
+        The file written.
+
+    Raises
+    ------
+    click.ClickException
+        If any rule cannot be expressed as lookups (each reason is logged first).
+    """
+    raw = src.read_bytes()
+    rules = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
+    lookup, bad = build_lookup(rules)
+    if bad:
+        for msg in bad:
+            logger.error(f"{src.name}: {msg}")
+        raise click.ClickException(f"{src}: {len(bad)} rules cannot be expressed as lookups")
+    # source + its hash let a consumer (and tests/test_lookup.py) tell a stale lookup apart.
+    lookup = {"format": lookup["format"], "version": lookup["version"], "source": src.name,
+              "source_sha256": hashlib.sha256(raw).hexdigest(), "spec": lookup["spec"], "rules": lookup["rules"]}
+    dst = dst or lookup_path(src)
+    write_lookup(lookup, dst)
+    logger.info(f"{src} -> {dst}: {len(rules)} rules, {sum(len(r['keys']) for r in lookup['rules'])} keys, "
+                f"{dst.stat().st_size:,} bytes (rules file {len(raw):,})")
+    return dst
+
+
 @click.command()
 @click.argument("srcs", nargs=-1, required=True, type=click.Path(exists=True, path_type=Path))
 @click.option("--out", type=click.Path(path_type=Path), default=None,
@@ -225,19 +265,7 @@ def main(srcs: tuple[Path, ...], out: Path | None) -> None:
     """Write the lookup form of each rule file SRCS."""
     assert out is None or len(srcs) == 1, "--out takes a single SRC"
     for src in srcs:
-        raw = src.read_bytes()
-        rules = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
-        lookup, bad = build_lookup(rules)
-        if bad:
-            for msg in bad:
-                logger.error(f"{src.name}: {msg}")
-            raise click.ClickException(f"{src}: {len(bad)} rules cannot be expressed as lookups")
-        lookup = {"format": lookup["format"], "version": lookup["version"], "source": src.name,
-                  "source_sha256": hashlib.sha256(raw).hexdigest(), "spec": lookup["spec"], "rules": lookup["rules"]}
-        dst = out or lookup_path(src)
-        write_lookup(lookup, dst)
-        logger.info(f"{src} -> {dst}: {len(rules)} rules, {sum(len(r['keys']) for r in lookup['rules'])} keys, "
-                    f"{dst.stat().st_size:,} bytes (rules file {len(raw):,})")
+        build_lookup_file(src, out)
 
 
 if __name__ == "__main__":

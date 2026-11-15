@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build one subset's fix rules from a whole-corpus transcription: 01 -> 02 -> (03) -> 04.
+# Build one subset's fix rules from a whole-corpus transcription: 01 -> 02 -> (03) -> 04 -> 08.
 # The steps and their guards are the same as the committed v1 files (see README), only the
 # input changes: ONE hyps file for every clip of the corpus (e.g. the v2 model on all 602k clips),
 # restricted here to one subset and a set of splits by 01 --hyps-out, so each subset gets its own
@@ -22,7 +22,7 @@
 #               checks the merge on these texts plus the subset's hyps; unset = no merge
 # Outputs in <out dir>: errors.json (01), hyps.jsonl (the subset's hyps), rules.unmerged.jsonl and
 # rules.unmerged.rejected.jsonl (02), rules.merged.jsonl (03, if MERGE_TEXTS), rules.jsonl (04, final),
-# build.log (every step's full output).
+# rules.lookup.json (08, the lookup-table form of rules.jsonl), build.log (every step's full output).
 # Written with Claude Code.
 set -euo pipefail
 HYPS=$(readlink -f "$1") OUT=$(readlink -m "$2") SUB=$3; shift 3
@@ -56,4 +56,6 @@ fi
 echo "== 04 $(date '+%F %T')"
 ng=(); for g in ${NEWS_GUARD:-}; do ng+=(--guard "$(readlink -f "$g")"); done
 uv run ./04_drop_unk_variants.py "$src" "$OUT/rules.jsonl" "${labels[@]}" "${ng[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|occur"
+echo "== 08 $(date '+%F %T')"
+uv run ./08_build_lookup.py "$OUT/rules.jsonl" --out "$OUT/rules.lookup.json" 2>&1 | tee -a "$OUT/build.log" | grep -E "keys|cannot"
 echo "== done $SUB $(date '+%F %T')"

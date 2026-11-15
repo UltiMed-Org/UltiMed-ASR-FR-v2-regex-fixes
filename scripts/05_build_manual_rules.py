@@ -16,7 +16,11 @@ spelling conventions as output fixes). TSVs are read in order and a variant whos
 pattern an earlier line already holds is skipped, so ``manual_fixes.tsv`` (first by
 default) wins.
 
-Usage: uv run scripts/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl]
+It also refreshes the lookup-table form (``lookup/manual_fix_rules.lookup.json`` by
+default, see ``08_build_lookup.py``), since a hand edit of a TSV is the one change made
+outside a full build and the lookup must follow it. ``--no-lookup`` skips that.
+
+Usage: uv run scripts/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl] [--lookup-out OUT.lookup.json]
 This file was written by Claude Code.
 """
 import importlib.util
@@ -33,6 +37,10 @@ _spec.loader.exec_module(b)
 _mspec = importlib.util.spec_from_file_location("m", _HERE / "03_merge_rules.py")
 m = importlib.util.module_from_spec(_mspec)
 _mspec.loader.exec_module(m)
+# 08 owns the lookup format; loaded here only to refresh the manual lookup after a rebuild.
+_lspec = importlib.util.spec_from_file_location("lk", _HERE / "08_build_lookup.py")
+lk = importlib.util.module_from_spec(_lspec)
+_lspec.loader.exec_module(lk)
 
 
 def build_manual_rules(lines) -> list[dict]:
@@ -61,12 +69,21 @@ def build_manual_rules(lines) -> list[dict]:
 @click.command()
 @click.argument("tsvs", nargs=-1, type=click.Path(exists=True, path_type=Path))
 @click.option("--out", type=click.Path(path_type=Path), default=_HERE.parent / "rules" / "manual_fix_rules.jsonl", show_default=True)
-def main(tsvs: tuple[Path, ...], out: Path) -> None:
+@click.option("--lookup-out", type=click.Path(path_type=Path), default=None,
+              help="lookup file to refresh; default lookup/<OUT stem>.lookup.json for the default OUT, "
+                   "else OUT with a .lookup.json suffix")
+@click.option("--no-lookup", is_flag=True, help="do not write the lookup form")
+def main(tsvs: tuple[Path, ...], out: Path, lookup_out: Path | None, no_lookup: bool) -> None:
     tsvs = tsvs or (_HERE.parent / "inputs" / "manual_fixes.tsv", _HERE.parent / "inputs" / "convention_fixes.tsv")
     rules = build_manual_rules([line for tsv in tsvs for line in tsv.read_text(encoding="utf-8").splitlines()])
     with out.open("w", encoding="utf-8") as f:
         f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rules)
     logger.info(f"{', '.join(t.name for t in tsvs)} -> {out}: {len(rules)} rules")
+    if not no_lookup:
+        # A custom OUT gets its lookup beside it, so a trial build never overwrites lookup/.
+        if lookup_out is None and out.resolve() != (_HERE.parent / "rules" / "manual_fix_rules.jsonl").resolve():
+            lookup_out = out.with_suffix(".lookup.json")
+        lk.build_lookup_file(out, lookup_out)
 
 
 if __name__ == "__main__":
