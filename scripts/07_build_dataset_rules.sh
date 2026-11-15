@@ -10,7 +10,9 @@
 #   The real-text labels (02 --labels, 04 --labels) are the release-wide $D/<split>.jsonl of the SAME
 #   splits, so a held-out build (train val) never sees the test labels either.
 # Env (all optional):
-#   D           manifests dir (default ../99_hf_release/data/NeMO_files)
+#   ULTIMED_SCRIPTS_DIR  UltiMed-ASR-FR-v1-scripts checkout (default: a sibling of this repo), read by
+#               01/02/06 too (drug lexicon, casing table, manifest helpers)
+#   D           manifests dir (default $ULTIMED_SCRIPTS_DIR/99_hf_release/data/NeMO_files)
 #   LEXICON     extra term list for 01/02 --lexicon (unset = drug names only, as drug_fix_rules.jsonl;
 #               01_dictionnary/original_dictionnary.jsonl = the term rules)
 #   GUARDS      .txt files of correct outside text that block variants in 02 (e.g. French Wikipedia)
@@ -25,18 +27,20 @@
 set -euo pipefail
 HYPS=$(readlink -f "$1") OUT=$(readlink -m "$2") SUB=$3; shift 3
 HERE=$(dirname "$(readlink -f "$0")")
-D=$(readlink -f "${D:-$HERE/../99_hf_release/data/NeMO_files}")
-mkdir -p "$OUT"; : > "$OUT/build.log"; cd "$HERE/.."
+SCRIPTS_DIR=$(readlink -f "${ULTIMED_SCRIPTS_DIR:-$HERE/../../UltiMed-ASR-FR-v1-scripts}")
+export ULTIMED_SCRIPTS_DIR=$SCRIPTS_DIR
+D=$(readlink -f "${D:-$SCRIPTS_DIR/99_hf_release/data/NeMO_files}")
+mkdir -p "$OUT"; : > "$OUT/build.log"; cd "$HERE"
 mfs=() labels=() lex=() names=() guards=()
 for sp in "$@"; do mfs+=("$D/$SUB/$sp.jsonl"); labels+=(--labels "$D/$sp.jsonl"); done
 [ -n "${LEXICON:-}" ] && lex=(--lexicon "$(readlink -f "$LEXICON")")
 for g in ${GUARDS:-}; do guards+=(--labels "$(readlink -f "$g")"); done
 for f in ${NAMES:-}; do names+=(--names "$(readlink -f "$f")"); done
 echo "== $SUB [$*] 01 $(date '+%F %T')"
-uv run 08_drug_asr_rules/01_extract_drug_errors.py "$HYPS" "${mfs[@]}" "${lex[@]}" \
+uv run ./01_extract_drug_errors.py "$HYPS" "${mfs[@]}" "${lex[@]}" \
   --out "$OUT/errors.json" --hyps-out "$OUT/hyps.jsonl" 2>&1 | tee -a "$OUT/build.log" | grep -E "lexicon|clips|wrote"
 echo "== 02 $(date '+%F %T')"
-uv run 08_drug_asr_rules/02_build_fix_rules.py "$OUT/hyps.jsonl" --errors "$OUT/errors.json" \
+uv run ./02_build_fix_rules.py "$OUT/hyps.jsonl" --errors "$OUT/errors.json" \
   "${labels[@]}" "${guards[@]}" "${names[@]}" "${lex[@]}" --out "$OUT/rules.unmerged.jsonl" 2>&1 | tee -a "$OUT/build.log" | grep -E "covering|names|wrote"
 src=$OUT/rules.unmerged.jsonl
 if [ -n "${MERGE_TEXTS:-}" ]; then
@@ -46,10 +50,10 @@ if [ -n "${MERGE_TEXTS:-}" ]; then
     t=$(readlink -f "$t")
     if head -1 "$t" | grep -q '"hyp"'; then pool+=(--hyps "$t"); else pool+=(--labels "$t"); fi
   done
-  uv run 08_drug_asr_rules/03_merge_rules.py "$src" "$OUT/rules.merged.jsonl" "${pool[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "rules|split back"
+  uv run ./03_merge_rules.py "$src" "$OUT/rules.merged.jsonl" "${pool[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "rules|split back"
   src=$OUT/rules.merged.jsonl
 fi
 echo "== 04 $(date '+%F %T')"
 ng=(); for g in ${NEWS_GUARD:-}; do ng+=(--guard "$(readlink -f "$g")"); done
-uv run 08_drug_asr_rules/04_drop_unk_variants.py "$src" "$OUT/rules.jsonl" "${labels[@]}" "${ng[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|occur"
+uv run ./04_drop_unk_variants.py "$src" "$OUT/rules.jsonl" "${labels[@]}" "${ng[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|occur"
 echo "== done $SUB $(date '+%F %T')"

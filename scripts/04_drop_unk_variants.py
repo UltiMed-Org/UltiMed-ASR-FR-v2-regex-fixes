@@ -11,7 +11,7 @@ such a variant (onnx-asr glues ``<unk>`` to the next word, the web decoder delet
 removing it changes no output. A merged rule keeps its other variants, its pattern rebuilt
 from them exactly as 03_merge_rules.py builds it; a rule left with no variant goes.
 
-    uv run 08_drug_asr_rules/04_drop_unk_variants.py IN.jsonl OUT.jsonl [--labels L.jsonl ...]
+    uv run scripts/04_drop_unk_variants.py IN.jsonl OUT.jsonl [--labels L.jsonl ...]
 
 ``--labels`` also drops the variants the fixed ``real_text`` guard of 02 (2026-10-07) would
 have rejected: a last word French elides ("part d") that a label holds with its apostrophe

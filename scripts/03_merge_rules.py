@@ -18,7 +18,7 @@ every text given (hyps, labels, any outside text): a group whose merged rule fir
 that came out different is split back into its original rules, and the check repeats until
 every text comes out exactly as with the original file.
 
-    uv run 08_drug_asr_rules/03_merge_rules.py drug_fix_rules.jsonl merged.jsonl \\
+    uv run scripts/03_merge_rules.py drug_fix_rules.jsonl merged.jsonl \\
         --hyps drugs_hyps.UltiMed.jsonl ... --labels ../99_hf_release/data/NeMO_files/full.jsonl ...
 """
 import importlib.util

@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["click", "loguru", "litellm", "tiktoken", "tqdm", "tenacity", "rapidfuzz", "wordfreq"]
 # ///
-"""Tests for 08_drug_asr_rules: the doctests of 01_extract_drug_errors.py (tokenizing,
+"""Tests for the rule build scripts in scripts/: the doctests of 01_extract_drug_errors.py (tokenizing,
 drug spotting, the character-level mapping inside a multi-word replace, glued elisions)
 and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply_rules),
 03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py and
@@ -11,19 +11,35 @@ and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply
 
     uv run tests/test_drug_asr_rules.py
 
+The ``01 --hyps-out`` test and 06's doctests need the UltiMed-ASR-FR-v1-scripts checkout
+(drug lexicon, ``label_conventions``; see 01's ``SCRIPTS_DIR``) and are skipped without it.
+
 This file was written by Claude Code.
 """
 import doctest
 import importlib.util
 from pathlib import Path
 
-STAGE = Path(__file__).resolve().parent.parent / "08_drug_asr_rules"
+STAGE = Path(__file__).resolve().parent.parent / "scripts"
 
 
-def _run_doctests(name: str) -> None:
+def _load(name: str):
     spec = importlib.util.spec_from_file_location(name.replace(".py", ""), STAGE / name)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    return mod
+
+
+def _has_scripts_dir(test: str) -> bool:
+    """False (and says so) when the dataset scripts checkout ``test`` needs is missing."""
+    d = _load("01_extract_drug_errors.py").SCRIPTS_DIR
+    if not d.is_dir():
+        print(f"{test}: SKIPPED, no UltiMed-ASR-FR-v1-scripts at {d} (set ULTIMED_SCRIPTS_DIR)")
+    return d.is_dir()
+
+
+def _run_doctests(name: str) -> None:
+    mod = _load(name)
     failed, attempted = doctest.testmod(mod)
     assert attempted and not failed, (name, failed, attempted)
     print(f"{name}: OK ({attempted} cases)")
@@ -42,9 +58,9 @@ def test_extract_hyps_out() -> None:
 
     from click.testing import CliRunner
 
-    spec = importlib.util.spec_from_file_location("extract", STAGE / "01_extract_drug_errors.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    if not _has_scripts_dir("01 --hyps-out"):
+        return
+    mod = _load("01_extract_drug_errors.py")
     with tempfile.TemporaryDirectory() as d:
         d = Path(d)
         hyps = [{"audio": str(d / "drugs" / f"{n}.flac"), "hyp": f"hyp {n}"} for n in ("a", "b", "c")]
@@ -77,7 +93,8 @@ def test_build_manual_rules() -> None:
 
 
 def test_build_convention_fixes() -> None:
-    _run_doctests("06_build_convention_fixes.py")
+    if _has_scripts_dir("06_build_convention_fixes.py"):
+        _run_doctests("06_build_convention_fixes.py")
 
 
 if __name__ == "__main__":

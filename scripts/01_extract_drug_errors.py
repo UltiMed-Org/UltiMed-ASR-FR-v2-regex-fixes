@@ -54,13 +54,13 @@ inside a word is kept. Variants are rendered with the elision re-attached
 (``d'hexaméthasone``). Casing is irrelevant here: the rules built by
 ``02_build_fix_rules.py`` match case-insensitively and write the canonical casing.
 
-Output (default ``08_drug_asr_rules/drug_asr_errors.json``), most errors first::
+Output (default ``v1/drug_asr_errors.json``), most errors first::
 
     {"mirtazapine": {"n_seen": 212, "n_correct": 190, "n_deleted": 1,
                      "errors": {"myrtazapine": 15, "mire tazapine": 6}, "targets": {}},
      "étoposide": {..., "errors": {"létoposide": 2}, "targets": {"létoposide": "l'étoposide"}}}
 
-    uv run 08_drug_asr_rules/01_extract_drug_errors.py <hyps.jsonl> <manifest> [<manifest> ...]
+    uv run scripts/01_extract_drug_errors.py <hyps.jsonl> <manifest> [<manifest> ...]
 
 This file was written by Claude Code.
 """
@@ -69,6 +69,7 @@ from __future__ import annotations
 import difflib
 import importlib.util
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -79,14 +80,16 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-_ROOT = _HERE.parent
-sys.path.insert(0, str(_ROOT / "utils"))
-from nemo_manifest import clip_key, read_jsonl, resolve_audio  # noqa: E402
+_REPO = _HERE.parent
+# The dataset scripts repo (UltiMed-ASR-FR-v1-scripts) owns the drug lexicon, the casing table, the
+# manifest helpers and the release manifests these scripts read: a sibling checkout by default,
+# anywhere else via ULTIMED_SCRIPTS_DIR. Only 01, 02's defaults and 06 need it.
+SCRIPTS_DIR = Path(os.environ.get("ULTIMED_SCRIPTS_DIR") or _REPO.parent / "UltiMed-ASR-FR-v1-scripts").resolve()
 
-DEFAULT_OUT = _HERE / "drug_asr_errors.json"
-DRUG_CASING = _ROOT / "utils" / "drug_casing.json"
-DRUG_ENTRIES = _ROOT / "02_drugs" / "drugs_freq_dosages.jsonl"
-DRUG_STAGE = _ROOT / "02_drugs" / "01_generate_drug_texts.py"
+DEFAULT_OUT = _REPO / "v1" / "drug_asr_errors.json"
+DRUG_CASING = SCRIPTS_DIR / "utils" / "drug_casing.json"
+DRUG_ENTRIES = SCRIPTS_DIR / "02_drugs" / "drugs_freq_dosages.jsonl"
+DRUG_STAGE = SCRIPTS_DIR / "02_drugs" / "01_generate_drug_texts.py"
 MIN_DRUG_LEN = 5
 MAX_TERM_ZIPF = 3.0
 
@@ -337,7 +340,7 @@ def lexicon_options(f):
 @click.command()
 @click.argument("hyps", type=click.Path(exists=True, path_type=Path))
 @click.argument("manifests", nargs=-1, required=True, type=click.Path(exists=True, path_type=Path))
-@click.option("--out", default=str(DEFAULT_OUT), show_default="08_drug_asr_rules/drug_asr_errors.json",
+@click.option("--out", default=str(DEFAULT_OUT), show_default="v1/drug_asr_errors.json",
               type=click.Path(path_type=Path))
 @click.option("--hyps-out", type=click.Path(path_type=Path), default=None,
               help="also write the hypotheses of the MANIFESTS' clips here (same format as HYPS): "
@@ -347,6 +350,8 @@ def lexicon_options(f):
 def main(hyps: Path, manifests: tuple[Path, ...], out: Path, hyps_out: Path | None, lexicons: tuple[Path, ...],
          max_term_zipf: float) -> None:
     """Write the per-drug misspelling report from a hypotheses file."""
+    sys.path.insert(0, str(SCRIPTS_DIR / "utils"))
+    from nemo_manifest import clip_key, read_jsonl, resolve_audio
     hyp_by_key, rows_by_key = {}, {}
     for line in hyps.open():
         r = json.loads(line)

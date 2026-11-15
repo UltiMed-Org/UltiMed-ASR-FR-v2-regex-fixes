@@ -16,7 +16,7 @@ spelling conventions as output fixes). TSVs are read in order and a variant whos
 pattern an earlier line already holds is skipped, so ``manual_fixes.tsv`` (first by
 default) wins.
 
-Usage: uv run 08_drug_asr_rules/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl]
+Usage: uv run scripts/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl]
 This file was written by Claude Code.
 """
 import importlib.util
@@ -60,9 +60,9 @@ def build_manual_rules(lines) -> list[dict]:
 
 @click.command()
 @click.argument("tsvs", nargs=-1, type=click.Path(exists=True, path_type=Path))
-@click.option("--out", type=click.Path(path_type=Path), default=_HERE / "manual_fix_rules.jsonl", show_default=True)
+@click.option("--out", type=click.Path(path_type=Path), default=_HERE.parent / "rules" / "manual_fix_rules.jsonl", show_default=True)
 def main(tsvs: tuple[Path, ...], out: Path) -> None:
-    tsvs = tsvs or (_HERE / "manual_fixes.tsv", _HERE / "convention_fixes.tsv")
+    tsvs = tsvs or (_HERE.parent / "inputs" / "manual_fixes.tsv", _HERE.parent / "inputs" / "convention_fixes.tsv")
     rules = build_manual_rules([line for tsv in tsvs for line in tsv.read_text(encoding="utf-8").splitlines()])
     with out.open("w", encoding="utf-8") as f:
         f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rules)

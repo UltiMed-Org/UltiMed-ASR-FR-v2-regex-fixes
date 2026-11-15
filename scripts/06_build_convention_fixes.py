@@ -30,7 +30,7 @@ would drop ``bévacizumab`` for them.
 wins), so the rules ship in ``manual_fix_rules.jsonl``, applied before the drug and term
 rules.
 
-    uv run 08_drug_asr_rules/06_build_convention_fixes.py path/to/variants.tsv \
+    uv run scripts/06_build_convention_fixes.py path/to/variants.tsv \
         --labels 99_hf_release/data/NeMO_files/full.jsonl --labels 99_hf_release/data/NeMO_files/PARROT/full.jsonl
 
 This file was written by Claude Code.
@@ -46,12 +46,11 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(_HERE.parent / "utils"))
-from label_conventions import apply_label_conventions  # noqa: E402
-
 _spec = importlib.util.spec_from_file_location("b", _HERE / "02_build_fix_rules.py")
 b = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(b)
+sys.path.insert(0, str(b.extract.SCRIPTS_DIR / "utils"))  # see 01's SCRIPTS_DIR
+from label_conventions import apply_label_conventions  # noqa: E402
 
 
 def _letters(s: str) -> str:
@@ -99,7 +98,7 @@ def firing(fixes: dict[str, str], labels) -> Counter:
 
 @click.command()
 @click.argument("variants_tsv", type=click.Path(exists=True))
-@click.argument("out", type=click.Path(path_type=Path), default=_HERE / "convention_fixes.tsv")
+@click.argument("out", type=click.Path(path_type=Path), default=_HERE.parent / "inputs" / "convention_fixes.tsv")
 @click.option("--labels", multiple=True, type=click.Path(exists=True), help="NeMo manifests: drop rules that change converted labels.")
 @click.option("--max-fire", default=0.1, show_default=True, help="Drop a rule changing more than this share of its family's label occurrences.")
 def main(variants_tsv, out: Path, labels, max_fire) -> None:

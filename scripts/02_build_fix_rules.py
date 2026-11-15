@@ -45,7 +45,7 @@ desc, then count desc. The replacement is the drug's canonical spelling (or the 
 elision target, ``l'étoposide``), capitalized when the match started a capitalized word
 and the canonical form is lowercase.
 
-Output (default ``08_drug_asr_rules/drug_fix_rules.json``)::
+Output (default ``v1/drug_fix_rules.jsonl``)::
 
     {"rules": [{"pattern": "...", "replacement": "mirtazapine", "variant": "mire tazapine",
                 "drug": "mirtazapine", "count": 6, "hyp_occurrences": 6, "precision": 1.0}, ...],
@@ -54,7 +54,7 @@ Output (default ``08_drug_asr_rules/drug_fix_rules.json``)::
 Apply them with ``apply_rules(text, rules)`` (importable) or copy the patterns into any
 regex engine that supports lookbehind.
 
-    uv run 08_drug_asr_rules/02_build_fix_rules.py <hyps.jsonl> [--errors drug_asr_errors.json]
+    uv run scripts/02_build_fix_rules.py <hyps.jsonl> [--errors drug_asr_errors.json]
 
 This file was written by Claude Code.
 """
@@ -79,9 +79,9 @@ _spec.loader.exec_module(extract)
 fold, tokens, load_lexicon = extract.fold, extract.tokens, extract.load_lexicon
 
 DEFAULT_ERRORS = extract.DEFAULT_OUT
-DEFAULT_OUT = _HERE / "drug_fix_rules.jsonl"
+DEFAULT_OUT = extract._REPO / "v1" / "drug_fix_rules.jsonl"
 # Correct labels of all splits; the release-wide full.jsonl leaves out PARROT (eval-only), so its own is added.
-DEFAULT_LABELS = tuple(_HERE.parent / "99_hf_release" / "data" / "NeMO_files" / f for f in ("full.jsonl", "PARROT/full.jsonl"))
+DEFAULT_LABELS = tuple(extract.SCRIPTS_DIR / "99_hf_release" / "data" / "NeMO_files" / f for f in ("full.jsonl", "PARROT/full.jsonl"))
 
 # Every accented form a folded letter stands for, so a rule written from "phélodipine"
 # also fixes "phelodipine" (01 already treats an accent slip as correct).
@@ -512,13 +512,13 @@ def _read_texts(path: Path, field: str):
 @click.argument("hyps", nargs=-1, required=True, type=click.Path(exists=True, path_type=Path))
 @click.option("--errors", "errors_paths", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="01 reports, one per model whose HYPS are given (repeatable, merged with "
-                   "merge_reports). Default: 08_drug_asr_rules/drug_asr_errors.json")
+                   "merge_reports). Default: v1/drug_asr_errors.json")
 @click.option("--labels", "labels_paths", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="Manifests whose `text` counts as correct text, or plain .txt files of one correct sentence "
                    "per line, e.g. Wikipedia sentences (repeatable). "
                    "Default: 99_hf_release/data/NeMO_files/full.jsonl")
 @click.option("--out", default=str(DEFAULT_OUT), type=click.Path(path_type=Path),
-              show_default="08_drug_asr_rules/drug_fix_rules.jsonl",
+              show_default="v1/drug_fix_rules.jsonl",
               help="one rule per line, in application order; the rejected variants go to <out stem>.rejected.jsonl")
 @click.option("--min-len", default=5, show_default=True)
 @click.option("--min-count", default=1, show_default=True,
