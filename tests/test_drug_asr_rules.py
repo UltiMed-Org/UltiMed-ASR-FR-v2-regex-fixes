@@ -6,8 +6,8 @@
 """Tests for the rule build scripts in scripts/: the doctests of 01_extract_drug_errors.py (tokenizing,
 drug spotting, the character-level mapping inside a multi-word replace, glued elisions)
 and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply_rules),
-03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py and
-06_build_convention_fixes.py.
+03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py,
+06_build_convention_fixes.py and 09_apply_resolutions.py.
 
     uv run tests/test_drug_asr_rules.py
 
@@ -107,6 +107,10 @@ def test_build_manual_rules() -> None:
     _run_doctests("05_build_manual_rules.py")
 
 
+def test_apply_resolutions() -> None:
+    _run_doctests("09_apply_resolutions.py")
+
+
 def test_build_convention_fixes() -> None:
     if _has_scripts_dir("06_build_convention_fixes.py"):
         _run_doctests("06_build_convention_fixes.py")
@@ -120,4 +124,5 @@ if __name__ == "__main__":
     test_merge_rules()
     test_drop_unk_variants()
     test_build_manual_rules()
+    test_apply_resolutions()
     test_build_convention_fixes()

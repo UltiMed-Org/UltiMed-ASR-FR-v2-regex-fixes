@@ -35,8 +35,11 @@ A match must start on a word character that does not follow a word character, a 
 an apostrophe, except the apostrophe of a French elision (a lone ``d l n j m t s c``, or
 ``qu``); it must end before a character that is neither a word character nor a hyphen. A
 rule with ``not_after`` never starts right after one of ``spec.titles`` plus one space
-(``docteur Mirat`` keeps the surname). A key ending with an apostrophe swallows the
-whitespace after it, minus one space if a word character or hyphen follows.
+(``docteur Mirat`` keeps the surname). A rule with ``before_vowel`` (lookup version 2,
+hand rules only) matches only when whitespace then a character of ``spec.vowels`` follow
+the key, and its match runs to that character, the whitespace included (``trocarde
+aspiration`` -> ``trocart d'`` + ``aspiration``). A key ending with an apostrophe swallows
+the whitespace after it, minus one space if a word character or hyphen follows.
 
 Usage::
 
@@ -64,7 +67,7 @@ class Lookup:
     Attributes
     ----------
     rules : list[dict]
-        The file's rules in application order: ``to`` and optional ``not_after``.
+        The file's rules in application order: ``to``, optional ``not_after`` and ``before_vowel``.
     table : dict[str, list[tuple[int, int]]]
         Key -> ``(rule index, key rank within that rule)`` for every rule holding it, rule
         index ascending (two rules may share a key, and one rule may list a key twice when
@@ -76,6 +79,7 @@ class Lookup:
     word: frozenset[str]
     seps: frozenset[str]
     space: frozenset[str]
+    vowels: frozenset[str]
     apostrophes: frozenset[str]
     case_map: dict[str, str]
     accent_map: dict[str, str]
@@ -99,7 +103,7 @@ class Lookup:
         Lookup
         """
         data = json.loads(Path(path).read_text(encoding="utf-8"))
-        assert data["format"] == "ultimed-fix-rules-lookup" and data["version"] == 1, path
+        assert data["format"] == "ultimed-fix-rules-lookup" and data["version"] in (1, 2), path
         spec = data["spec"]
         table: dict[str, list[tuple[int, int]]] = {}
         for i, r in enumerate(data["rules"]):
@@ -107,7 +111,7 @@ class Lookup:
                 table.setdefault(k, []).append((i, rank))
         word = frozenset(chr(c) for lo, hi in spec["word_chars"] for c in range(lo, hi + 1))
         return cls(rules=data["rules"], table=table, word=word, seps=frozenset(spec["separators"]),
-                   space=frozenset(spec["whitespace"]), apostrophes=frozenset(spec["apostrophes"]),
+                   space=frozenset(spec["whitespace"]), vowels=frozenset(spec.get("vowels", "")), apostrophes=frozenset(spec["apostrophes"]),
                    case_map=spec["case_map"], accent_map=spec["accent_map"],
                    elision=frozenset(spec["elision"]), titles=spec["titles"],
                    max_key_len=max(map(len, table), default=0), source=data.get("source", ""))
@@ -149,6 +153,14 @@ class Lookup:
             if all(self.case(text[s + k]) == t[k] for k in range(len(t))):
                 return True
         return False
+
+    def _before_vowel(self, text: str, end: int) -> int:
+        """Where a ``before_vowel`` match ending at ``end`` really ends: past the whitespace
+        that follows it, if a vowel (or h) comes next, else -1."""
+        k = end
+        while k < len(text) and text[k] in self.space:
+            k += 1
+        return k if k > end and k < len(text) and text[k] in self.vowels else -1
 
     def _parses(self, text: str, p: int) -> list[tuple[str, int]]:
         """Every ``(key, end)`` a key could match from ``p`` on.
@@ -216,7 +228,9 @@ class Lookup:
             for key, end in self._parses(text, p):
                 for i, rank in self.table.get(key, ()):
                     if i > after and not (self.rules[i].get("not_after") and self._after_title(text, p)):
-                        found.setdefault(i, []).append((p, rank, end))
+                        e = self._before_vowel(text, end) if self.rules[i].get("before_vowel") else end
+                        if e >= 0:
+                            found.setdefault(i, []).append((p, rank, e))
         return found
 
     def fix(self, text: str, trace: list[int] | None = None) -> str:

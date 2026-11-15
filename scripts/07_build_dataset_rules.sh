@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build one subset's fix rules from a whole-corpus transcription: 01 -> 02 -> (03) -> 04 -> 08.
+# Build one subset's fix rules from a whole-corpus transcription: 01 -> 02 -> (03) -> 04 -> 09 -> 08.
 # The steps and their guards are the same as the committed v1 files (see README), only the
 # input changes: ONE hyps file for every clip of the corpus (e.g. the v2 model on all 602k clips),
 # restricted here to one subset and a set of splits by 01 --hyps-out, so each subset gets its own
@@ -11,7 +11,7 @@
 #   splits, so a held-out build (train val) never sees the test labels either.
 # Env (all optional):
 #   ULTIMED_SCRIPTS_DIR  UltiMed-ASR-FR-v1-scripts checkout (default: a sibling of this repo), read by
-#               01/02/06 too (drug lexicon, casing table, manifest helpers)
+#               01/02/06/09 too (drug lexicon, casing table, manifest helpers)
 #   D           manifests dir (default $ULTIMED_SCRIPTS_DIR/99_hf_release/data/NeMO_files)
 #   LEXICON     extra term list for 01/02 --lexicon (unset = drug names only, as drug_fix_rules.jsonl;
 #               01_dictionnary/original_dictionnary.jsonl = the term rules)
@@ -21,8 +21,9 @@
 #   MERGE_TEXTS when set (space-separated hyps .jsonl / manifests / .txt), 03 merges the rules and
 #               checks the merge on these texts plus the subset's hyps; unset = no merge
 # Outputs in <out dir>: errors.json (01), hyps.jsonl (the subset's hyps), rules.unmerged.jsonl and
-# rules.unmerged.rejected.jsonl (02), rules.merged.jsonl (03, if MERGE_TEXTS), rules.jsonl (04, final),
-# rules.lookup.json (08, the lookup-table form of rules.jsonl), build.log (every step's full output).
+# rules.unmerged.rejected.jsonl (02), rules.merged.jsonl (03, if MERGE_TEXTS), rules.unresolved.jsonl (04),
+# rules.jsonl (09, final: inputs/conflict_resolutions.tsv variants removed, replacements respelled by
+# the label conventions), rules.lookup.json (08, the lookup-table form of rules.jsonl), build.log (every step's full output).
 # Written with Claude Code.
 set -euo pipefail
 HYPS=$(readlink -f "$1") OUT=$(readlink -m "$2") SUB=$3; shift 3
@@ -55,7 +56,9 @@ if [ -n "${MERGE_TEXTS:-}" ]; then
 fi
 echo "== 04 $(date '+%F %T')"
 ng=(); for g in ${NEWS_GUARD:-}; do ng+=(--guard "$(readlink -f "$g")"); done
-uv run ./04_drop_unk_variants.py "$src" "$OUT/rules.jsonl" "${labels[@]}" "${ng[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|occur"
+uv run ./04_drop_unk_variants.py "$src" "$OUT/rules.unresolved.jsonl" "${labels[@]}" "${ng[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|occur"
+echo "== 09 $(date '+%F %T')"
+uv run ./09_apply_resolutions.py "$OUT/rules.unresolved.jsonl" "$OUT/rules.jsonl" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|respelled"
 echo "== 08 $(date '+%F %T')"
 uv run ./08_build_lookup.py "$OUT/rules.jsonl" --out "$OUT/rules.lookup.json" 2>&1 | tee -a "$OUT/build.log" | grep -E "keys|cannot"
 echo "== done $SUB $(date '+%F %T')"

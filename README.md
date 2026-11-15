@@ -14,14 +14,14 @@ These are the **v2** rules, built on 2026-11-13 from the v2 model alone (the "mi
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes (`post-opératoire`, `lodose` to `lowdose`, ...), dataset-agnostic, unchanged since v1 | 1,943 | 1,905 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 1,943 | 1,905 |
 | `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,854 | 2,388 |
 | `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 42,827 | 18,137 |
 | `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 3,960 | 2,103 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 154 | 121 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
-The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,116 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). So the order matters: apply the manual file first (a hand fix wins over a learned one), then the drug file. TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
+The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,116 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. So the order matters: apply the manual file first (a hand fix wins over a learned one), then the drug file. TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
 
 ### Measured effect
 
@@ -48,9 +48,9 @@ TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author
 | `rules/` | the six v2 rule files (regex form) |
 | `lookup/` | the same six files in lookup-table form, generated from `rules/` by `scripts/08_build_lookup.py` |
 | `rejected/` | the candidates each v2 build rejected, with the reason, and `drug_asr_errors.json` (the misspellings the drug build started from) |
-| `inputs/` | the hand-written `manual_fixes.tsv` and the generated `convention_fixes.tsv`, source of `manual_fix_rules.jsonl` |
+| `inputs/` | the author's `conflict_resolutions.tsv` (variants the learned files disagreed on), the hand-written `manual_fixes.tsv` and the generated `convention_fixes.tsv`, source of `manual_fix_rules.jsonl` |
 | `v1/` | the v1 outputs, kept for comparison: `drug_fix_rules.jsonl`, `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list), their rejected lists and the per-model `drug_asr_errors*.json` |
-| `scripts/` | the build chain (01 to 07, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
+| `scripts/` | the build chain (01 to 07 and 09, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
 | `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
 
 The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts) checkout. By default they look for it next to this repository; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
@@ -63,7 +63,7 @@ One JSON rule per line, applied top to bottom, file after file. For each rule:
 - replace every match with `replacement`;
 - when the matched text starts with a capital and the replacement does not, capitalise the replacement's first letter.
 
-A rule with `"name": true` is also a French surname: its pattern already skips a match right after a title like `docteur`, so the surname in `docteur X` is left alone. Merged rules carry a `variants` list (one alternation per replacement); unmerged ones a single `variant` plus build statistics.
+A rule with `"before_vowel": true` (only in the manual file) ends on the whitespace before a word starting with a vowel or `h` instead of a word end, and its replacement eats that whitespace (`trocarde aspiration` becomes `trocart d'aspiration`). A rule with `"name": true` is also a French surname: its pattern already skips a match right after a title like `docteur`, so the surname in `docteur X` is left alone. Merged rules carry a `variants` list (one alternation per replacement); unmerged ones a single `variant` plus build statistics.
 
 With tens of thousands of rules a naive loop over every rule for every sentence is slow: index each rule under a literal anchor of its variants and only try the rules whose anchor occurs in the text. Two implementations do this: `compile_rules` in `scripts/02_build_fix_rules.py` (Python) and `scripts/bench/regex-rescore.mjs` in the [parakeet-ultra ONNX repo](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx) (JavaScript). [parakeet_web](https://parakeetweb.olicorne.org/) applies them in the browser.
 
@@ -72,11 +72,11 @@ With tens of thousands of rules a naive loop over every rule for every sentence 
 The patterns need lookbehind (word bounds, French elisions, the title guard), which some regex engines lack. A lookup file holds the same rules as plain data, so a consumer only walks characters and reads dictionaries. It is valid JSON with one rule per line (the two rules below are illustrations):
 
 ```json
-{"format": "ultimed-fix-rules-lookup", "version": 1,
+{"format": "ultimed-fix-rules-lookup", "version": 2,
  "source": "drug_fix_rules.jsonl", "source_sha256": "...",
  "spec": {"word_chars": [[48, 57], [65, 90], ...], "separators": "\t\n ... -", "whitespace": "...",
           "apostrophes": "'’", "case_map": {"A": "a", ...}, "accent_map": {"é": "e", ...},
-          "elision": "dlnjmtsc", "titles": ["docteur", "docteure", "dr", "dr.", "pr", ...]},
+          "elision": "dlnjmtsc", "vowels": "AEHIOUYaehiouyÀÂ...", "titles": ["docteur", "docteure", "dr", "dr.", "pr", ...]},
  "rules": [
   {"to": "mirtazapine", "keys": ["myrtazapine", "mire tazapine"]},
   {"to": "Humira", "keys": ["mirat"], "not_after": true},
@@ -94,7 +94,8 @@ Matching rules, which `scripts/apply_lookup.py` (no regex, under 300 lines with 
 3. A key ending on an apostrophe swallows the whitespace after it, minus one space if a word character or hyphen follows.
 4. Within one rule, matches are found left to right and never overlap. At one start position the rule's FIRST key (in its `keys` order) that matches wins, not the longest. The bounds always look at the text as it was before that rule ran.
 5. A rule with `"not_after": true` does not match right after a title from `spec.titles` followed by one space (the surname guard of `"name": true`).
-6. When the matched text starts with an uppercase letter and `to` starts with a lowercase one, the replacement's first letter is uppercased.
+6. A rule with `"before_vowel": true` (version 2; version 1 files had none) matches only when whitespace then a character of `spec.vowels` follow the key, and the match runs up to that character, the whitespace included, so `to` (ending on an apostrophe) is glued to the next word.
+7. When the matched text starts with an uppercase letter and `to` starts with a lowercase one, the replacement's first letter is uppercased.
 
 Only rules that match change anything, so a consumer can build one dictionary from every key to its `(rule index, key rank)` pairs, find all matches in one pass, apply the lowest-index matching rule, and repeat with the rules after it. That is what `apply_lookup.py` does:
 

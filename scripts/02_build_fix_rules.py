@@ -99,6 +99,11 @@ _START = (rf"(?<![{_WORD}-])"
 
 
 _END = rf"(?![{_WORD}-])"  # end bound: no letter or hyphen after the match
+# A hand rule may only fire before a word starting with a vowel or h (inputs/conflict_resolutions.tsv,
+# context ``before_vowel``): it ends on the whitespace after the variant, which the replacement consumes
+# ("trocarde aspiration" -> "trocart d'" + "aspiration"). It replaces ``_END``, which ``\s+`` implies.
+_VOWELS = "aàâäeéèêëiîïoôöuùûüyÿhœæ"
+_BEFORE_VOWEL = rf"\s+(?=[{_VOWELS}])"
 # Titles written before a person's name. A rule whose variant is also a French name (--names) gets one
 # negative lookbehind per title, each fixed width (Python) and with its own left word bound (so "calcium. X"
 # is not read as "M. X"): the surname stays after a title, the rule still fires everywhere else.
@@ -167,6 +172,17 @@ def variant_pattern(variant: str) -> str:
                 parts.append(re.escape(ch))
         words.append("".join(parts))
     return _START + r"[\s-]+".join(words) + _END
+
+
+def before_vowel_pattern(variant: str) -> str:
+    """``variant_pattern`` that only matches before a word starting with a vowel or h, the
+    whitespace up to that word included.
+
+    >>> p = re.compile(before_vowel_pattern("trocarde"), re.IGNORECASE)
+    >>> [p.sub("trocart d'", t) for t in ("un trocarde  Optique", "un trocarde de 5", "trocarde-hybride")]
+    ["un trocart d'Optique", 'un trocarde de 5', 'trocarde-hybride']
+    """
+    return variant_pattern(variant)[:-len(_END)] + _BEFORE_VOWEL
 
 
 def _key(text: str) -> tuple[str, ...]:

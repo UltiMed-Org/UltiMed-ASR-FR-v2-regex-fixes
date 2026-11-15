@@ -40,7 +40,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-FILES = ("manual", "drug", "dictionary", "parhaf", "parrot", "acronyms")
+# Application order: the learned files, then the hand rules LAST (see 05_build_manual_rules.py).
+FILES = ("drug", "dictionary", "parhaf", "parrot", "acronyms", "manual")
 
 
 def _load(name: str, file: str):
@@ -109,7 +110,11 @@ def _edge_rules() -> list[dict]:
     # first alternative wins: "ana" listed before "ana na" in one merged rule
     merged = merge.merge_rules([{"variant": v, "pattern": b.variant_pattern(v), "replacement": "X"}
                                 for v in ("ana", "ana na", "anana")])
-    return rules + [r for _, r in merged]
+    # a hand rule that only fires before a vowel or h, then its fallback (05's resolution_rule)
+    vowel = {"variant": "trocarde", "pattern": b.before_vowel_pattern("trocarde"), "replacement": "trocart d'",
+             "before_vowel": True}
+    return rules + [r for _, r in merged] + [vowel, {"variant": "trocarde", "pattern": b.variant_pattern("trocarde"),
+                                                     "replacement": "trocart de"}]
 
 
 EDGE_TEXTS = [
@@ -121,6 +126,8 @@ EDGE_TEXTS = [
     "d' accord d'", "d'  ", "d'  x", "d' -x", "d'", "jusqu'  à demain", "jusqu'-à", "Œdème", "pã PÃ pa",
     "ad hoc", "ad  hoc", "ad-hoc ad", "_ad", "ad_", "é ad", "-ad", "ad-", "ad'", "'ad", "l'ad", "c'ad", "ç'ad",
     " ad hoc　", "Ad Hoc", "ÀD", "ana na",
+    "trocarde aspiration", "Trocarde  Hôpital", "trocarde\toptique", "trocarde de", "trocarde", "trocarde ",
+    "trocarde-arme", "trocarde Œil", "trocarde ÿ", "trocarde 5", "trocarde Ãx", "trocarde\u2028 e", "l'trocarde é",
 ]
 
 
@@ -245,9 +252,45 @@ def test_corpus() -> None:
         _compare(f"corpus {name}{'' if path else ' (synthetic)'}", texts, b.compile_rules(rules), lk)
 
 
+# conflict_resolutions.tsv, through every committed file in application order: (text, expected).
+RESOLVED = [
+    ("scanner lodose thoracique", "scanner low-dose thoracique"), ("un TDM lodose", "un TDM low-dose"),
+    ("Scanner lodose", "Scanner low-dose"), ("une imagerie dite lodose", "une imagerie dite low-dose"),
+    ("hyper de la lodose lombaire", "hyper de la lordose lombaire"), ("traité par lodose", "traité par Lodoz"),
+    ("sous lodose", "sous Lodoz"),
+    ("allergie, l'areus soulage", "allergie, l'Aerius soulage"), ("sous areus le soir", "sous Aerius le soir"),
+    ("staphylococcus areus", "staphylococcus aureus"),
+    ("gyrus singulaire droit", "gyrus cingulaire droit"), ("engagement singulaire", "engagement cingulaire"),
+    ("un cas singulaire", "un cas singulaire"),
+    ("un trocarde aspiration", "un trocart d'aspiration"), ("un trocarde hémostatique", "un trocart d'hémostatique"),
+    ("un trocarde dilatation", "un trocart de dilatation"),
+    ("signes de démolyse", "signes d'hémolyse"), ("la démolyse", "la d'hémolyse"),
+    ("signe de lasec positif", "signe de Lasègue positif"), ("lasec", "lasec"),
+    ("comprimés de déductiles", "comprimés d'Eductyl"), ("une neubopathie", "une neubopathie"),
+    ("lésion du périos", "lésion du périoste"), ("traces de protéinur", "traces de protéinur"),
+]
+
+
+def test_resolutions() -> None:
+    """The hand decisions of conflict_resolutions.tsv, end to end on the committed files
+    (regex and lookup, learned files then manual), with concrete sentences."""
+    fixes = [b.compile_rules(_rules(n)) for n in FILES]
+    lks = [apply.Lookup.load(REPO / "lookup" / f"{n}_fix_rules.lookup.json") for n in FILES]
+    bad = []
+    for text, want in RESOLVED:
+        got, via = text, text
+        for f, lk in zip(fixes, lks):
+            got, via = f(got), lk.fix(via)
+        if got != want or via != want:
+            bad.append((text, want, got, via))
+    print(f"resolutions: {len(RESOLVED)} sentences, {len(bad)} wrong")
+    assert not bad, bad
+
+
 if __name__ == "__main__":
     test_doctests()
     test_lookups_current()
     test_edge_cases()
     test_fuzz()
     test_corpus()
+    test_resolutions()

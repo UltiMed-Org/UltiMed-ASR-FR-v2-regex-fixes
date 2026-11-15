@@ -55,10 +55,10 @@ def merge_rules(rules: list[dict], keep: set[int] = frozenset()) -> list[tuple[l
     """
     groups: dict[tuple, list[int]] = {}
     for i, r in enumerate(rules):
-        groups.setdefault((r["replacement"], bool(r.get("name"))), []).append(i)
+        groups.setdefault((r["replacement"], bool(r.get("name")), bool(r.get("before_vowel"))), []).append(i)
     out = []
     for ix in groups.values():
-        if len(ix) == 1 or ix[0] in keep:
+        if len(ix) == 1 or ix[0] in keep or rules[ix[0]].get("before_vowel"):
             out += [([i], rules[i]) for i in ix]
             continue
         first, bodies = rules[ix[0]], []

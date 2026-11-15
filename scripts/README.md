@@ -44,7 +44,7 @@ Rebuilt with Claude Code for the v2 release, from the v2 model alone (mix7, fp32
 
 Every replacement comes from the v2 labels (02 copies the label text a rule was learned from), so the v1 caveat about old spellings no longer applies. Note the v2 labels themselves carry both spellings of some drugs (`bevacizumab` 363 vs `bévacizumab` 151, `perindopril` 1,055 vs `périndopril` 1,672 in `full.jsonl`), so the accent a rule writes depends on the clip it was learned from.
 
-`07_build_dataset_rules.sh <hyps.jsonl> <out dir> <subset> <split>...` runs the whole chain on one subset: 01 `--hyps-out` keeps the hyps of that subset's clips, 02 (real-text labels = the release-wide manifests of the same splits, the 1M French Wikipedia sentences, `--names`), 03 merge when `MERGE_TEXTS` is set, 04 (`<unk>` cleanup, plus `--guard` when `NEWS_GUARD` is set). The drug list uses no lexicon; the four term lists use `LEXICON=01_dictionnary/original_dictionnary.jsonl` and `NEWS_GUARD` = Leipzig `fr-news-2024-1M.txt`, as v1's `term_fix_rules.jsonl`. The merge (release build only) is checked on the full v2 hyps, `full.jsonl`, French and English Wikipedia and the held-out 2023 news.
+`07_build_dataset_rules.sh <hyps.jsonl> <out dir> <subset> <split>...` runs the whole chain on one subset: 01 `--hyps-out` keeps the hyps of that subset's clips, 02 (real-text labels = the release-wide manifests of the same splits, the 1M French Wikipedia sentences, `--names`), 03 merge when `MERGE_TEXTS` is set, 04 (`<unk>` cleanup, plus `--guard` when `NEWS_GUARD` is set), 09 (the author's conflict decisions, see below), 08 (the lookup form). The drug list uses no lexicon; the four term lists use `LEXICON=01_dictionnary/original_dictionnary.jsonl` and `NEWS_GUARD` = Leipzig `fr-news-2024-1M.txt`, as v1's `term_fix_rules.jsonl`. The merge (release build only) is checked on the full v2 hyps, `full.jsonl`, French and English Wikipedia and the held-out 2023 news.
 
 ```bash
 D=99_hf_release/data/NeMO_files GUARDS=.../fr-wikipedia-1M.txt NAMES=.../fr-names.txt \
@@ -218,6 +218,22 @@ uv run scripts/05_build_manual_rules.py
 Caveat: the drug and term rules run after these and their replacements come from the v1 labels, so they can write an old spelling back (`bévacizumab`). Rebuild them on v2 labels.
 
 Written with Claude Code.
+
+## Conflict decisions (`09_apply_resolutions.py`, 2026-11-15)
+
+The v2 files overlap, and 35 variant pairs got a different replacement depending on the file (`trocarde`: `trocart de` in dictionary, `trocart d'` in PARHAF; `lodose`: `Lodoz` in drugs, `lowdose` in the manual file). The author decided each of the 33 variants by hand in `inputs/conflict_resolutions.tsv`, `variant<TAB>context<TAB>replacement`:
+
+- context `*`: anywhere (`ostradiol` -> `estradiol`);
+- `after:WORDS`: only right after those words, which the rule keeps (`lodose` after `scanner` -> `scanner low-dose`); `after:de` with a replacement starting with `d'` consumes the `de` (`de démolyse` -> `d'hémolyse`), `after:l'` glues (`l'areus` -> `l'Aerius`);
+- `before_vowel`: only when the next word starts with a vowel or `h`, the space included (`trocarde aspiration` -> `trocart d'aspiration`; 02's `before_vowel_pattern`, never merged by 03, `"before_vowel": true` in the lookup);
+- an empty replacement: no rule at all for the variant in that context (too ambiguous), and no later line may fix it.
+
+The first line matching a variant wins, so a context line comes before the `*` fallback. `09_apply_resolutions.py SRC DST` removes every variant the TSV names from a learned file (through 04's `drop_unk_variants`, which rebuilds a merged pattern from the remaining variants), and 05 turns the lines into manual rules, read before `manual_fixes.tsv` so a decision beats a hand fix. 07 runs it after 04. On the committed files: drugs 2,388 -> 2,381 rules (15 variants dropped), dictionary 18,137 -> 18,125 (31), PARHAF 2,103 -> 2,094 (21), PARROT 121 -> 120 (1), acronyms unchanged; the manual file grew 1,905 -> 1,945 rules. No variant has two replacements across the files any more. `tests/test_lookup.py` (`test_resolutions`) runs 24 sentences through both forms of all six files. Done with Claude Code.
+
+```bash
+uv run scripts/09_apply_resolutions.py rules/drug_fix_rules.jsonl rules/drug_fix_rules.jsonl --no-conventions
+uv run scripts/05_build_manual_rules.py
+```
 
 ## French news guard on the term rules (2026-10-08)
 

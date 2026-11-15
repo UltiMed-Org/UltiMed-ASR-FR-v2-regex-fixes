@@ -93,7 +93,8 @@ def check_pattern(r: dict) -> bool:
 
     Unmerged rules are ``[title guard] + variant_pattern(v)``; merged ones put the bodies in
     one ``(?:...|...)`` behind the same prefix, except that 04 writes a merged rule left with
-    one variant without the group.
+    one variant without the group. A ``before_vowel`` rule (05, never merged) ends on
+    ``_BEFORE_VOWEL`` instead of ``_END``.
 
     >>> r = {"variant": "myrtazapine", "pattern": b.variant_pattern("myrtazapine"), "replacement": "x"}
     >>> check_pattern(r), check_pattern(dict(r, pattern=r["pattern"] + "s"))
@@ -101,6 +102,8 @@ def check_pattern(r: dict) -> bool:
     """
     body = lambda v: b.variant_pattern(v)[len(b._START):-len(b._END)]  # noqa: E731
     pre, vs = m._prefix(r), _variants(r)
+    if r.get("before_vowel"):
+        return "variants" not in r and r["pattern"] == pre + body(vs[0]) + b._BEFORE_VOWEL
     single = pre + body(vs[0]) + b._END
     group = pre + "(?:" + "|".join(map(body, vs)) + ")" + b._END
     return r["pattern"] == (group if "variants" in r else single) or (len(vs) == 1 and r["pattern"] in (single, group))
@@ -130,6 +133,7 @@ def build_spec(rules: list[dict]) -> dict:
         "word_chars": _ranges(_matching(f"[{b._WORD}]")),
         "separators": "".join(sorted(_matching(r"[\s-]"))),
         "whitespace": "".join(sorted(_matching(r"\s"))),
+        "vowels": "".join(sorted(_matching(f"[{b._VOWELS}]"))),
         "apostrophes": _APOSTROPHES,
         "case_map": dict(sorted(case_map.items())),
         "accent_map": accent_map,
@@ -192,13 +196,15 @@ def build_lookup(rules: list[dict]) -> tuple[dict, list[str]]:
         if not check_pattern(r):
             bad.append(f"rule {i} ({r['replacement']!r}): pattern does not rebuild from its variants")
         for v, k in zip(_variants(r), keys):
-            if not _key_ok(k, word) or "’" in v:
+            if not _key_ok(k, word) or "’" in v or (r.get("before_vowel") and k.endswith("'")):
                 bad.append(f"rule {i} ({r['replacement']!r}): variant {v!r} has no lookup key")
         row = {"to": r["replacement"], "keys": keys}
         if r.get("name"):
             row["not_after"] = True
+        if r.get("before_vowel"):
+            row["before_vowel"] = True
         out.append(row)
-    return {"format": "ultimed-fix-rules-lookup", "version": 1, "spec": spec, "rules": out}, bad
+    return {"format": "ultimed-fix-rules-lookup", "version": 2, "spec": spec, "rules": out}, bad
 
 
 def write_lookup(lookup: dict, path: Path) -> None:
