@@ -1,4 +1,6 @@
-# 08_drug_asr_rules: regex fixes for drug names the ASR model misspells
+# Build scripts: regex fixes for words the ASR model misspells
+
+This is the build history of the rule files, moved here from `08_drug_asr_rules/` of [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts) on 2026-11-15. Paths below are relative to the root of this repo: the scripts are in `scripts/`, the v2 rule files in `rules/` (their rejected lists and `drug_asr_errors.json` in `rejected/`), the hand-written TSVs in `inputs/`, and the v1 outputs (`drug_fix_rules.jsonl`, `term_fix_rules.jsonl`, the `drug_asr_errors*.json` files) in `v1/`. Paths starting with `99_hf_release/` or `01_dictionnary/` are inside a UltiMed-ASR-FR-v1-scripts checkout, which the scripts expect next to this repo or at `$ULTIMED_SCRIPTS_DIR`. `08_build_lookup.py` (the lookup-table form of the rules) is new here and described in the top-level README.
 
 Goal: transcribe every clip of the UltiMed `drugs` subset with the fine-tuned Parakeet, collect how each drug name gets misspelled (`"mirtazapine": {"myrtazapine": 15, "mire tazapine": 6}`), and turn that into an ordered list of regex rules that fix drug names in ASR output while rarely overcorrecting.
 
@@ -20,25 +22,25 @@ Caveat: the model was trained on the train split, so its train-clip errors are u
 ## 2. Collect the misspellings
 
 ```bash
-uv run 08_drug_asr_rules/01_extract_drug_errors.py drugs_hyps.jsonl \
+uv run scripts/01_extract_drug_errors.py drugs_hyps.jsonl \
     99_hf_release/data/NeMO_files/drugs/{train,val,test}.jsonl
 ```
 
-This writes `08_drug_asr_rules/drug_asr_errors.json`, most errors first. Any manifest works (the oli or PARHAF sets too): every drug word in a label counts, whatever the source. The script docstring details how drug words are spotted and how a hypothesis stretch is attributed to one drug.
+This writes `v1/drug_asr_errors.json`, most errors first. Any manifest works (the oli or PARHAF sets too): every drug word in a label counts, whatever the source. The script docstring details how drug words are spotted and how a hypothesis stretch is attributed to one drug.
 
 ## 3. Build the rules
 
 ```bash
-uv run 08_drug_asr_rules/02_build_fix_rules.py drugs_hyps.jsonl
+uv run scripts/02_build_fix_rules.py drugs_hyps.jsonl
 ```
 
-This writes `08_drug_asr_rules/drug_fix_rules.jsonl` (one rule per line, apply top to bottom) and `drug_fix_rules.rejected.jsonl` (with the reason, for review). Scanning the 600k corpus labels for `real_text` takes about 1.5 min. The guards (`short`, `contains_target`, `other_term` (called `other_drug` in the earlier builds below), `real_text`, `trailing_a` (the variant is real text plus a lone `à`: `patelle à` -> `patella` would turn "la patelle à répétition" into "la patella répétition"), `french_word`, `ambiguous`, `imprecise`, `rare`, `far`, `common_words`) and their thresholds are in the script docstring and `--help`. Both scripts take a repeated `--lexicon <file.jsonl>` (any JSONL with a `term` field, e.g. `01_dictionnary/original_dictionnary.jsonl`): the words of its terms rarer in French than `--max-term-zipf` (default 3.0, wordfreq Zipf) are tracked like drug names, so the same pipeline mines medical-term misspellings on any subset. With the dictionary the lexicon grows from 2,999 drug words to 32,094 ("syndrome de Brugada" adds `brugada`, not `syndrome`). The acronym list adds nothing: no acronym has 5 letters or more without a digit. Several models can feed one rule set: give each model's hyps file as HYPS and its 01 report with a repeated `--errors`, and `merge_reports` sums them. The `rare` and `common_words` thresholds count distinct clips (the most any single model wrote the variant), not the sum: every model transcribes the same audio, so the same slip from several models on one clip is one clip of evidence.
+This writes `v1/drug_fix_rules.jsonl` (one rule per line, apply top to bottom) and `drug_fix_rules.rejected.jsonl` (with the reason, for review). Scanning the 600k corpus labels for `real_text` takes about 1.5 min. The guards (`short`, `contains_target`, `other_term` (called `other_drug` in the earlier builds below), `real_text`, `trailing_a` (the variant is real text plus a lone `à`: `patelle à` -> `patella` would turn "la patelle à répétition" into "la patella répétition"), `french_word`, `ambiguous`, `imprecise`, `rare`, `far`, `common_words`) and their thresholds are in the script docstring and `--help`. Both scripts take a repeated `--lexicon <file.jsonl>` (any JSONL with a `term` field, e.g. `01_dictionnary/original_dictionnary.jsonl`): the words of its terms rarer in French than `--max-term-zipf` (default 3.0, wordfreq Zipf) are tracked like drug names, so the same pipeline mines medical-term misspellings on any subset. With the dictionary the lexicon grows from 2,999 drug words to 32,094 ("syndrome de Brugada" adds `brugada`, not `syndrome`). The acronym list adds nothing: no acronym has 5 letters or more without a digit. Several models can feed one rule set: give each model's hyps file as HYPS and its 01 report with a repeated `--errors`, and `merge_reports` sums them. The `rare` and `common_words` thresholds count distinct clips (the most any single model wrote the variant), not the sum: every model transcribes the same audio, so the same slip from several models on one clip is one clip of evidence.
 
 Apply the rules with `fix = compile_rules(rules)` then `fix(text)` from `02_build_fix_rules.py` (`load_rules(path)` reads the JSONL). `compile_rules` indexes each rule by its anchor, the longest accent-folded word of its variant, so a text only runs the few rules whose anchor it contains: same output as `apply_rules(text, rules)` (every rule in order, the reference implementation) but about 150x faster (0.11 ms against 16.9 ms per text, measured with 1.6k rules). You can also copy the patterns into any regex engine that supports lookbehind. Each pattern is case-insensitive: compile it with the `i` flag, plus `u` in JavaScript (`new RegExp(pattern, 'giu')`), and when the matched text starts with a capital and the replacement does not, capitalise the replacement (`Myrtazapine` -> `Mirtazapine`). The word bounds spell out their letter class instead of using `\w`, so the patterns behave the same in Python and JavaScript. `scripts/bench/regex-rescore.mjs` in the [parakeet-tdt-0.6b-v3-ultra-onnx](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx) repo is a JavaScript port, anchor index included (0 mismatches against Python on 41,743 transcripts).
 
-## v2 rules (`v2/`, 2026-11-13, one list per subset)
+## v2 rules (`rules/`, 2026-11-13, one list per subset)
 
-Rebuilt with Claude Code for the v2 release, from the v2 model alone (mix7, fp32 ONNX) transcribing all 602,776 clips of the v2 corpus, and split by subset: `v2/drugs_fix_rules.jsonl`, `v2/dictionary_fix_rules.jsonl`, `v2/parhaf_fix_rules.jsonl`, `v2/parrot_fix_rules.jsonl`, `v2/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` (plus `v2/drugs_asr_errors.json`). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt: apply it first, as before.
+Rebuilt with Claude Code for the v2 release, from the v2 model alone (mix7, fp32 ONNX) transcribing all 602,776 clips of the v2 corpus, and split by subset: `rules/drug_fix_rules.jsonl`, `rules/dictionary_fix_rules.jsonl`, `rules/parhaf_fix_rules.jsonl`, `rules/parrot_fix_rules.jsonl`, `rules/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` in `rejected/` (plus `rejected/drug_asr_errors.json`). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt: apply it first, as before.
 
 Every replacement comes from the v2 labels (02 copies the label text a rule was learned from), so the v1 caveat about old spellings no longer applies. Note the v2 labels themselves carry both spellings of some drugs (`bevacizumab` 363 vs `bévacizumab` 151, `perindopril` 1,055 vs `périndopril` 1,672 in `full.jsonl`), so the accent a rule writes depends on the clip it was learned from.
 
@@ -47,7 +49,7 @@ Every replacement comes from the v2 labels (02 copies the label text a rule was 
 ```bash
 D=99_hf_release/data/NeMO_files GUARDS=.../fr-wikipedia-1M.txt NAMES=.../fr-names.txt \
   MERGE_TEXTS="full.mix7-onnx-fp32.hyp.jsonl $D/full.jsonl .../fr-wikipedia-1M.txt .../en-wikipedia-1M.txt .../fr-news-2023-100K.txt" \
-  08_drug_asr_rules/07_build_dataset_rules.sh full.mix7-onnx-fp32.hyp.jsonl out/A/drugs drugs train val test
+  scripts/07_build_dataset_rules.sh full.mix7-onnx-fp32.hyp.jsonl out/A/drugs drugs train val test
 ```
 
 Two builds per subset, as in v1:
@@ -133,11 +135,11 @@ Before the all-splits decision the rules were built on train+val only, keeping t
 
 ```bash
 # per model: drugs_hyps.jsonl from step 1, drugs_hyps.trainval.jsonl = the same minus the test clips
-uv run 08_drug_asr_rules/01_extract_drug_errors.py drugs_hyps.trainval.jsonl \
+uv run scripts/01_extract_drug_errors.py drugs_hyps.trainval.jsonl \
     99_hf_release/data/NeMO_files/drugs/{train,val}.jsonl --out <drug_asr_errors.json or drug_asr_errors.ultra.json>
-uv run 08_drug_asr_rules/02_build_fix_rules.py {ultimed,ultra,ultra-int8,ultra-w4a8}/drugs_hyps.trainval.jsonl \
-    --errors 08_drug_asr_rules/drug_asr_errors.json --errors 08_drug_asr_rules/drug_asr_errors.ultra.json \
-    --errors 08_drug_asr_rules/drug_asr_errors.ultra-int8.json --errors 08_drug_asr_rules/drug_asr_errors.ultra-w4a8.json \
+uv run scripts/02_build_fix_rules.py {ultimed,ultra,ultra-int8,ultra-w4a8}/drugs_hyps.trainval.jsonl \
+    --errors v1/drug_asr_errors.json --errors v1/drug_asr_errors.ultra.json \
+    --errors v1/drug_asr_errors.ultra-int8.json --errors v1/drug_asr_errors.ultra-w4a8.json \
     --labels 99_hf_release/data/NeMO_files/train.jsonl --labels 99_hf_release/data/NeMO_files/val.jsonl
 ```
 
@@ -183,13 +185,13 @@ On the boosted UltiMed int8 browser transcripts the committed rules bring test_d
 
 The merged file drops the per-variant statistics (`drug`, `precision`, `similarity`, `hyp_occurrences`; `count` is summed): the unmerged build output keeps them. Consumers index a merged rule under the anchor of each of its variants (`compile_rules`, and its JS port `scripts/bench/regex-rescore.mjs` in the ultra model repo, which on the merged drug rules matches Python on the original on all 70,398 drug hyps). Built with Claude Code.
 
-    uv run 08_drug_asr_rules/03_merge_rules.py <rules.jsonl> <merged.jsonl> --hyps <hyps.jsonl> ... --labels <manifest.jsonl or .txt> ...
+    uv run scripts/03_merge_rules.py <rules.jsonl> <merged.jsonl> --hyps <hyps.jsonl> ... --labels <manifest.jsonl or .txt> ...
 
 ## `<unk>` variants (`04_drop_unk_variants.py`, 2026-10-06)
 
 The decoder emits `<unk>` for characters missing from its vocab (`°`, `+`, some apostrophes), and `01`'s tokenizer used to split it into the word `unk`, so a few variants read `unk sophagienne` or `d unk orsum`. No runtime output can match them (onnx-asr glues `<unk>` to the next word, the web decoder deletes it), so they were dead weight. `01` now skips any error span holding `<unk>`, and `04` removed the existing ones from the committed files, rebuilding each merged pattern from its remaining variants exactly as `03` builds it: drug 1 variant (3,428 rules kept), term 42 variants (25,045 -> 25,042 rules). Built with Claude Code.
 
-    uv run 08_drug_asr_rules/04_drop_unk_variants.py <rules.jsonl> <out.jsonl> [--labels <manifest.jsonl or .txt> ...]
+    uv run scripts/04_drop_unk_variants.py <rules.jsonl> <out.jsonl> [--labels <manifest.jsonl or .txt> ...]
 
 ## Elided last letters (2026-10-07)
 
@@ -200,7 +202,7 @@ A rule's end bound lets it fire right before an apostrophe, which real fixes nee
 `manual_fixes.tsv` lists fixes the author asked for directly (`variant<TAB>replacement`), and `05_build_manual_rules.py` turns it into `manual_fix_rules.jsonl` with the same patterns and merging as the learned rules. Consumers apply it FIRST, before `drug_fix_rules.jsonl` and `term_fix_rules.jsonl`, so a hand fix wins on the same words: `lodose` / `lodoses` -> `lowdose` (the learned drug rules turned `lodose` into the brand `Lodoz`), and `ceresta` -> `Seresta` (already learned, kept explicit). These rules are not mined or overcorrection-checked like the others, and the published benchmarks ran without them. Add a line to the TSV and rerun:
 
 ```bash
-uv run 08_drug_asr_rules/05_build_manual_rules.py
+uv run scripts/05_build_manual_rules.py
 ```
 
 ### Label conventions as rules (`06_build_convention_fixes.py`, 2026-10-08)
@@ -208,9 +210,9 @@ uv run 08_drug_asr_rules/05_build_manual_rules.py
 The UltiMed v2 labels follow one spelling per word (`utils/label_conventions.py`: glued prefix compounds like `postopératoire`, `thoracoabdominopelvien`, unaccented drug INNs like `perindopril`, dictionary accents like `artefact`). A model trained on the v1 labels, or one that still slips, writes the other forms, so the author asked for every fixed term to also be a regex rule. `06_build_convention_fixes.py` takes the hyphen and accent families of the label audit (`06_hotfixes/05_label_variant_audit.py`), runs each form through `apply_label_conventions`, and writes `convention_fixes.tsv` (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`). A form only becomes a rule when the conventions change nothing but hyphens, spaces or accents. A family is all or nothing: if the conventions keep one form as its own word (`débordé` next to `déborde`), none of its forms gets a rule, because the pattern ignores accents and would hit the kept word too. With `--labels`, every label is converted and any rule that still changes one is dropped (the audit forms are lowercased, so a rule could otherwise turn `METAVIR` into `Metavir`). `05_build_manual_rules.py` reads `manual_fixes.tsv` then `convention_fixes.tsv`, so a hand fix wins on the same pattern. Notations that need context (`à un mois` -> `à 1 mois`, `phase II` -> `phase 2`) stay in the conventions only.
 
 ```bash
-uv run 08_drug_asr_rules/06_build_convention_fixes.py path/to/variants.tsv \
+uv run scripts/06_build_convention_fixes.py path/to/variants.tsv \
     --labels 99_hf_release/data/NeMO_files/full.jsonl --labels 99_hf_release/data/NeMO_files/PARROT/full.jsonl
-uv run 08_drug_asr_rules/05_build_manual_rules.py
+uv run scripts/05_build_manual_rules.py
 ```
 
 Caveat: the drug and term rules run after these and their replacements come from the v1 labels, so they can write an old spelling back (`bévacizumab`). Rebuild them on v2 labels.
@@ -270,6 +272,7 @@ The drug rules make no clip worse. The term rules make 2 of about 13,700 scored 
 
 ```bash
 uv run --with click --with loguru --with litellm --with tiktoken --with tqdm --with tenacity --with rapidfuzz --with wordfreq tests/test_drug_asr_rules.py
+uv run tests/test_lookup.py
 ```
 
 ## Smoke test (2026-09-29)
