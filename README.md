@@ -6,7 +6,7 @@ Each rule list ships in two equivalent forms: regexes (`rules/`) and lookup tabl
 
 This repository, its scripts and its docs were written with Claude Code. The rules and their build history moved here on 2026-11-15 from the model repository (`regex-fixes/`) and from `08_drug_asr_rules/` of [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts).
 
-TODO: license. The build scripts came from UltiMed-ASR-FR-v1-scripts (Apache-2.0) and the rule files from the model repository (CC BY 4.0).
+License: AGPL-3.0-or-later for everything in this repository (rules, lookup tables, scripts, tests), see `LICENSE`. The build scripts were first published in UltiMed-ASR-FR-v1-scripts under Apache-2.0 and the v1 rule files in the model repository under CC BY 4.0; those earlier copies keep their original license, this repository is the same author's relicensed continuation.
 
 ## The rules
 
