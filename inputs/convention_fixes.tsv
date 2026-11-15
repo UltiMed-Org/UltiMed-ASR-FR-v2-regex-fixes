@@ -22,6 +22,11 @@ alcoolo-dépendant	alcoolodépendant
 algo-dysfonctionnel	algodysfonctionnel
 algo-fonctionnel	algofonctionnel
 allele	allèle
+alpha foetoprotéine	alpha-foetoprotéine
+alpha globulines	alpha-globulines
+alpha glucosidase	alpha-glucosidase
+alpha lipoprotéines	alpha-lipoprotéines
+alpha réductase	alpha-réductase
 alpélisib	alpelisib
 altéplase	alteplase
 alvéolo-dentaire	alvéolodentaire
@@ -236,6 +241,7 @@ bi-épineux	biépineux
 bilio-digestive	biliodigestive
 bio-nettoyage	bionettoyage
 biogénèse	biogenèse
+biopsie exérèse	biopsie-exérèse
 bitôt	bitot
 blastogénèse	blastogenèse
 blépharo-conjonctivite	blépharoconjonctivite
@@ -243,7 +249,6 @@ bortezomib	bortézomib
 boîterie	boiterie
 brachio facial	brachiofacial
 brachio faciale	brachiofaciale
-brachio-anté-brachio-palmaire	brachioanté-brachiopalmaire
 brachio-antébrachio-palmaire	brachioantébrachiopalmaire
 brachio-céphalique	brachiocéphalique
 brachio-céphaliques	brachiocéphaliques
@@ -270,6 +275,10 @@ bulévirtide	bulevirtide
 bálint	balint
 bélimumab	belimumab
 bévacizumab	bevacizumab
+bêta adrénergique	bêta-adrénergique
+bêta globulines	bêta-globulines
+bêta mimétique	bêta-mimétique
+bêta mimétiques	bêta-mimétiques
 bêta-hydroxy-deshydrogénase	bêta-hydroxy-déshydrogénase
 bêta-hydroxystéroide	bêta-hydroxystéroïde
 calcaneus	calcanéus
@@ -432,11 +441,11 @@ d'auto-rééducation	d'autorééducation
 d'auto-sondage	d'autosondage
 d'auto-sondages	d'autosondages
 d'auto-surveillance	d'autosurveillance
+d'herpes	d'herpès
 d'hyper appui	d'hyperappui
 d'hyper-appui	d'hyperappui
 d'hémangio-péricytome	d'hémangiopéricytome
 d'hépato splénomégalie	d'hépatosplénomégalie
-d'hépato-gastro-entérologie	d'hépatogastro-entérologie
 d'hépato-gastroentérologie	d'hépatogastroentérologie
 d'hépato-splénomégalie	d'hépatosplénomégalie
 d'immuno-analyse	d'immunoanalyse
@@ -478,6 +487,7 @@ deviation	déviation
 dexaméthasone	dexamethasone
 diaphyso-épiphysaire	diaphysoépiphysaire
 differenciation	différenciation
+dipeptidylpeptidase	dipeptidyl peptidase
 diploë	diploé
 diploëtiques	diploétiques
 docosahexaènoïque	docosahexaénoïque
@@ -494,6 +504,7 @@ duodéno-pancréatectomie	duodénopancréatectomie
 duodéno-pancréatique	duodénopancréatique
 duodéno-pancréatiques	duodénopancréatiques
 dégludec	degludec
+déhydro cholestérol	déhydrocholestérol
 délirium	delirium
 démelin	demelin
 dénosumab	denosumab
@@ -592,7 +603,9 @@ fibro-élastose	fibroélastose
 fibro-épithélial	fibroépithélial
 fibro-épithéliale	fibroépithéliale
 fibrogénèse	fibrogenèse
+flexion extension	flexion-extension
 flumazénil	flumazenil
+fluoro-uracile	fluorouracile
 flécaine	flécaïne
 foeto-foetale	foetofoetale
 foeto-maternel	foetomaternel
@@ -625,7 +638,6 @@ gastro-entéro-anastomose	gastro-entéroanastomose
 gastro-pancréatique	gastropancréatique
 gastro-protégés	gastroprotégés
 gastro-résistant	gastrorésistant
-gastroentéro-anastomose	gastroentéroanastomose
 genetique	génétique
 genome	génome
 geraud	géraud
@@ -662,6 +674,12 @@ hydro-alcoolique	hydroalcoolique
 hydro-aérique	hydroaérique
 hydro-sodée	hydrosodée
 hydro-électrolytiques	hydroélectrolytiques
+hydroxy méthylglutarique	hydroxyméthylglutarique
+hydroxy vitamine	hydroxy-vitamine
+hydroxycorticostérone	hydroxy-corticostérone
+hydroxyindole acétique	hydroxy-indole-acétique
+hydroxyindole-acétique	hydroxy-indole-acétique
+hydroxyvitamine	hydroxy-vitamine
 hygiéno-diététique	hygiénodiététique
 hygiéno-diététiques	hygiénodiététiques
 hymenotomie	hyménotomie
@@ -671,6 +689,7 @@ hyper-autofluorescent	hyperautofluorescent
 hyper-intense	hyperintense
 hyper-signal	hypersignal
 hyper-signaux	hypersignaux
+hyperalpha globulinémie	hyperalpha-globulinémie
 hypo dense	hypodense
 hypo-action	hypoaction
 hypo-albuminémie	hypoalbuminémie
@@ -710,7 +729,6 @@ hépato jugulaire	hépatojugulaire
 hépato rénal	hépatorénal
 hépato-biliaire	hépatobiliaire
 hépato-cellulaire	hépatocellulaire
-hépato-gastro-entérologie	hépatogastro-entérologie
 hépato-gastroentérologie	hépatogastroentérologie
 hépato-jugulaire	hépatojugulaire
 hépato-pancréatique	hépatopancréatique
@@ -720,6 +738,7 @@ hépato-splénomégalie	hépatosplénomégalie
 hépato-érythrocytaire	hépatoérythrocytaire
 hétéro-agressivité	hétéroagressivité
 héxokinase	hexokinase
+iduronate sulfatase	iduronate-sulfatase
 idéo-moteur	idéomoteur
 ilio-coccygien	iliococcygien
 ilio-fémorale	iliofémorale
@@ -731,8 +750,6 @@ ilio-tibiale	iliotibiale
 ilots	îlots
 iléo-anale	iléoanale
 iléo-colique	iléocolique
-iléo-cæcal	iléocæcal
-iléo-cæcale	iléocæcale
 iléo-rectale	iléorectale
 iléo-transverse	iléotransverse
 ilôts	îlots
@@ -747,6 +764,7 @@ immuno-médiée	immunomédiée
 immuno-néphélémétrie	immunonéphélémétrie
 immuno-virologique	immunovirologique
 immunonéphélémètrie	immunonéphélémétrie
+incision drainage	incision-drainage
 infanto-juvénile	infantojuvénile
 infra-cardiaque	infracardiaque
 infra-centimétrique	infracentimétrique
@@ -1143,7 +1161,6 @@ médio-pied	médiopied
 médio-tarsienne	médiotarsienne
 mégacolon	mégacôlon
 mélanogénèse	mélanogenèse
-mélæna	melæna
 méningo-radiculite	méningoradiculite
 méno-métrorragies	ménométrorragies
 mésio-temporale	mésiotemporale
@@ -1156,6 +1173,7 @@ métacarpo-phalangiennes	métacarpophalangiennes
 métatarso-phalangien	métatarsophalangien
 métatarsus	metatarsus
 métformine	metformine
+méthylglutarique	méthyl-glutarique
 métréleptine	metreleptine
 méxilétine	mexiletine
 môlaire	molaire
@@ -1198,13 +1216,12 @@ neuro-épithéliale	neuroépithéliale
 neuro-épithélium	neuroépithélium
 nigro-striée	nigrostriée
 nintédanib	nintedanib
+nitro imidazolé	nitro-imidazolé
 nitro-bleu	nitrobleu
 nodulo-kystique	nodulokystique
 non insulino dépendant	non insulinodépendant
-non-insulino-dépendant	non-insulinodépendant
 nucleotide	nucléotide
 nucléo-cytoplasmique	nucléocytoplasmique
-nævo-carcinome	nævocarcinome
 néfopam	nefopam
 néo-cavité	néocavité
 néo-natale	néonatale
@@ -1352,9 +1369,15 @@ pharyngo-laryngectomie	pharyngolaryngectomie
 pharyngo-laryngé	pharyngolaryngé
 pharyngo-laryngée	pharyngolaryngée
 phlébovirus	phlebovirus
+phosphate uridyltransférase	phosphate-uridyltransférase
+phosphate-déshydrogénase	phosphate déshydrogénase
+phosphate-isomérase	phosphate isomérase
+phosphate-uridyl-transférase	phosphate-uridyltransférase
+phospho ribosylamine	phosphoribosylamine
 phospho-ammoniaco-magnésienne	phosphoammoniacomagnésienne
 phospho-ammoniacomagnésienne	phosphoammoniacomagnésienne
 phospho-calcique	phosphocalcique
+phosphoribosyl pyrophosphate	phosphoribosylpyrophosphate
 phrénico-médiastinal	phrénicomédiastinal
 phylogénèse	phylogenèse
 pilo-sébacé	pilosébacé
@@ -1384,27 +1407,17 @@ pontocérebelleuse	pontocérébelleuse
 porencephalique	porencéphalique
 porto-cave	portocave
 porto-systémique	portosystémique
-post angioplastie	postangioplastie
-post arthroscopie	postarthroscopie
 post axiale	postaxiale
-post biopsie	postbiopsie
 post capillaire	postcapillaire
-post cerclage	postcerclage
 post chirurgical	postchirurgical
 post chirurgicale	postchirurgicale
-post cholécystectomie	postcholécystectomie
 post critique	postcritique
-post curage	postcurage
 post cure	postcure
 post embolique	postembolique
-post endoscopie	postendoscopie
-post exposition	postexposition
 post hémorragique	posthémorragique
-post hépatite	posthépatite
 post infectieuse	postinfectieuse
 post infectieux	postinfectieux
 post interventionnelle	postinterventionnelle
-post kératoplastie	postkératoplastie
 post mictionnel	postmictionnel
 post mictionnelle	postmictionnelle
 post mictionnels	postmictionnels
@@ -1413,56 +1426,40 @@ post ménopausiques	postménopausiques
 post natale	postnatale
 post opératoire	postopératoire
 post opératoires	postopératoires
-post pneumonectomie	postpneumonectomie
 post prandial	postprandial
 post prandiale	postprandiale
 post prandiales	postprandiales
 post prandiaux	postprandiaux
-post prostatectomie	postprostatectomie
 post radiothérapique	postradiothérapique
 post radique	postradique
 post radiques	postradiques
-post résection	postrésection
 post tabagique	post-tabagique
-post thyroïdectomie	post-thyroïdectomie
 post transcriptionnelle	post-transcriptionnelle
 post transfusionnel	post-transfusionnel
 post vaccinal	postvaccinal
-post-angioplastie	postangioplastie
 post-anoxique	postanoxique
-post-arthroscopie	postarthroscopie
 post-axial	postaxial
 post-axiale	postaxiale
-post-biopsie	postbiopsie
 post-capillaire	postcapillaire
 post-central	postcentral
 post-centrale	postcentrale
-post-cerclage	postcerclage
 post-charge	postcharge
 post-chirurgical	postchirurgical
 post-chirurgicale	postchirurgicale
-post-cholécystectomie	postcholécystectomie
-post-commissurotomie	postcommissurotomie
 post-commotionnel	postcommotionnel
 post-coïtal	postcoïtal
 post-coïtale	postcoïtale
 post-critique	postcritique
-post-curage	postcurage
 post-cure	postcure
 post-embolique	postembolique
-post-endoscopie	postendoscopie
-post-exposition	postexposition
 post-ganglionnaires	postganglionnaires
 post-hypophysaire	posthypophysaire
 post-hypophyse	posthypophyse
 post-hémorragique	posthémorragique
-post-hépatite	posthépatite
-post-image	postimage
 post-infectieuse	postinfectieuse
 post-infectieux	postinfectieux
 post-inflammatoire	postinflammatoire
 post-interventionnelle	postinterventionnelle
-post-kératoplastie	postkératoplastie
 post-mictionnel	postmictionnel
 post-mictionnelle	postmictionnelle
 post-mictionnels	postmictionnels
@@ -1472,18 +1469,15 @@ post-natal	postnatal
 post-natale	postnatale
 post-opératoire	postopératoire
 post-opératoires	postopératoires
-post-pneumonectomie	postpneumonectomie
 post-poliomyélitique	postpoliomyélitique
 post-prandial	postprandial
 post-prandiale	postprandiale
 post-prandiales	postprandiales
 post-prandiaux	postprandiaux
-post-prostatectomie	postprostatectomie
 post-radiothérapique	postradiothérapique
 post-radique	postradique
 post-radiques	postradiques
 post-réductionnelle	postréductionnelle
-post-résection	postrésection
 post-streptococcique	poststreptococcique
 post-synaptique	postsynaptique
 post-vaccinal	postvaccinal
@@ -1503,26 +1497,23 @@ pro-arythmogène	proarythmogène
 procerus	procérus
 progeria	progéria
 prolene	prolène
+prolyl hydroxylase	prolyl-hydroxylase
 promonto-rétro-pubien	promontorétropubien
 promonto-rétropubien	promontorétropubien
 prono-supination	pronosupination
 pronucléus	pronucleus
 proto-diastolique	protodiastolique
-protéase	protease
 protéin	protein
 pré albumine	préalbumine
 pré anesthésique	préanesthésique
 pré capillaire	précapillaire
 pré conceptionnel	préconceptionnel
-pré greffe	prégreffe
 pré herniaire	préherniaire
 pré opératoire	préopératoire
 pré péritonéal	prépéritonéal
 pré péritonéale	prépéritonéale
 pré thérapeutique	préthérapeutique
-pré traitement	prétraitement
 pré éclampsie	prééclampsie
-pré-admission	préadmission
 pré-albumine	préalbumine
 pré-albuminémie	préalbuminémie
 pré-anesthésique	préanesthésique
@@ -1533,16 +1524,11 @@ pré-capillaire	précapillaire
 pré-centrale	précentrale
 pré-chirurgical	préchirurgical
 pré-chirurgicale	préchirurgicale
-pré-conception	préconception
 pré-conceptionnel	préconceptionnel
 pré-excitation	préexcitation
 pré-existante	préexistante
 pré-ganglionnaire	préganglionnaire
-pré-greffe	prégreffe
-pré-habilitation	préhabilitation
 pré-herniaire	préherniaire
-pré-hospitalier	préhospitalier
-pré-hospitalière	préhospitalière
 pré-implantaire	préimplantaire
 pré-implantation	préimplantation
 pré-implantatoire	préimplantatoire
@@ -1550,7 +1536,6 @@ pré-malléolaire	prémalléolaire
 pré-natal	prénatal
 pré-opératoire	préopératoire
 pré-opératoires	préopératoires
-pré-oxygénation	préoxygénation
 pré-pontique	prépontique
 pré-prandiale	préprandiale
 pré-prandiales	préprandiales
@@ -1559,7 +1544,6 @@ pré-péritonéal	prépéritonéal
 pré-péritonéale	prépéritonéale
 pré-rempli	prérempli
 pré-remplie	préremplie
-pré-reprise	préreprise
 pré-rotulienne	prérotulienne
 pré-rétinienne	prérétinienne
 pré-rétiniens	prérétiniens
@@ -1573,7 +1557,6 @@ pré-thérapeutique	préthérapeutique
 pré-tibiale	prétibiale
 pré-tragien	prétragien
 pré-tragienne	prétragienne
-pré-traitement	prétraitement
 pré-transfusionnel	prétransfusionnel
 pré-vertébral	prévertébral
 pré-vertébrale	prévertébrale
@@ -1618,6 +1601,7 @@ ptérygo-palatine	ptérygopalatine
 ptôsis	ptosis
 pubo-coccygienne	pubococcygienne
 pubo-rectal	puborectal
+pyrroline carboxylate	pyrroline-carboxylate
 pyrrolo-quinoline-quinone	pyrroloquinoline-quinone
 pyélo calicielles	pyélocalicielles
 pyélo-calicielle	pyélocalicielle
@@ -1787,8 +1771,6 @@ rétro-cave	rétrocave
 rétro-chiasmatique	rétrochiasmatique
 rétro-chiasmatiques	rétrochiasmatiques
 rétro-cornéens	rétrocornéens
-rétro-cæcal	rétrocæcal
-rétro-cæcaux	rétrocæcaux
 rétro-duodénal	rétroduodénal
 rétro-gassérienne	rétrogassérienne
 rétro-hyaloïdien	rétrohyaloïdien
@@ -1826,6 +1808,7 @@ sacro-coxalgie	sacrocoxalgie
 sacro-lombaire	sacrolombaire
 sacro-recto-génito-pubienne	sacrorectogénitopubienne
 sacro-sciatique	sacrosciatique
+sars cov	sars-cov
 scanno-guidée	scannoguidée
 scapho-lunaire	scapholunaire
 scaphocephalie	scaphocéphalie
