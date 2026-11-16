@@ -116,6 +116,19 @@ def test_build_convention_fixes() -> None:
         _run_doctests("06_build_convention_fixes.py")
 
 
+def test_convention_fixes_agree() -> None:
+    """No two rows of the committed ``convention_fixes.tsv`` share a pattern (accents and
+    hyphens folded) with different replacements: the first would silently win. Seven
+    such groups shipped until 2026-11-16 (``crâniocaudale`` beside ``craniocaudale``)."""
+    if not _has_scripts_dir("convention_fixes.tsv agreement"):
+        return
+    rows = [line.rstrip("\n").split("\t") for line in open(STAGE.parent / "inputs" / "convention_fixes.tsv", encoding="utf-8")
+            if not line.startswith("#")]
+    clash = _load("06_build_convention_fixes.py").collisions(dict(rows))
+    assert not clash, clash
+    print(f"convention_fixes.tsv agreement: OK ({len(rows)} rows)")
+
+
 if __name__ == "__main__":
     test_extract_drug_errors()
     test_extract_hyps_out()
@@ -126,3 +139,4 @@ if __name__ == "__main__":
     test_build_manual_rules()
     test_apply_resolutions()
     test_build_convention_fixes()
+    test_convention_fixes_agree()
