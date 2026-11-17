@@ -25,6 +25,11 @@
    capitals. Only a word the labels write the same way every time it is not
    sentence-initial (and at least ``RECASE_MIN`` times) is recased, so a word that also
    appears lowercase mid-sentence is left alone. The variants are untouched.
+   Then a multi-word replacement takes the casing the labels give the whole phrase
+   (``label_phrase_casing``) when one spelling holds at least ``PHRASE_SHARE`` of its
+   non-initial occurrences (at least ``RECASE_MIN``): ``Charcot-marie-Tooth`` ->
+   ``Charcot-Marie-Tooth``, which the per-word step leaves half done because ``marie`` is
+   also a lowercase word. ``--no-recase`` skips both.
 
 Rules with the same replacement are not re-merged: a merge must be checked on texts (03).
 
@@ -126,6 +131,22 @@ def apply_conventions(rules: list[dict], labels=None) -> tuple[list[tuple[str, s
 RECASE_MIN = 3  # non-initial label occurrences a word needs before its casing is copied
 _WORD_RE = re.compile(rf"[{b._WORD}]+")
 _SENTENCE_END = re.compile(r"[.!?:\n]")
+_AFTER_WORD = re.compile(rf"[{b._WORD}-]")  # a phrase must not run on into a word or a hyphen
+PHRASE_SHARE = 0.8  # share of a phrase's non-initial label occurrences its spelling needs
+
+
+def label_words(label: str) -> list[tuple[re.Match, bool]]:
+    """``label``'s word matches, each with whether it starts a sentence: the text's first
+    word, or the first after ``. ! ? :`` or a newline.
+
+    >>> [(m.group(0), s) for m, s in label_words("Vu. Le patient : HTA")]
+    [('Vu', True), ('Le', True), ('patient', False), ('HTA', True)]
+    """
+    out, end = [], 0
+    for i, m in enumerate(_WORD_RE.finditer(label)):
+        out.append((m, not i or bool(_SENTENCE_END.search(label[end:m.start()]))))
+        end = m.end()
+    return out
 
 
 def label_casing(labels, words: set[str], min_count: int = RECASE_MIN) -> dict[str, str]:
@@ -144,12 +165,10 @@ def label_casing(labels, words: set[str], min_count: int = RECASE_MIN) -> dict[s
     """
     seen: dict[str, Counter] = {}
     for label in labels:
-        end = 0
-        for i, m in enumerate(_WORD_RE.finditer(label)):
-            w, gap, end = m.group(0), label[end:m.start()], m.end()
-            low = w.lower()
-            if low in words and i and not _SENTENCE_END.search(gap):
-                seen.setdefault(low, Counter())[w] += 1
+        for m, initial in label_words(label):
+            w = m.group(0)
+            if not initial and w.lower() in words:
+                seen.setdefault(w.lower(), Counter())[w] += 1
     return {low: next(iter(c)) for low, c in sorted(seen.items())
             if len(c) == 1 and sum(c.values()) >= min_count}
 
@@ -173,6 +192,67 @@ def recase(rules: list[dict], casing: dict[str, str]) -> list[tuple[str, str]]:
     return changed
 
 
+def label_phrase_casing(labels, phrases: set[str], min_count: int = RECASE_MIN,
+                        share: float = PHRASE_SHARE) -> dict[str, str]:
+    """``lowercased phrase -> the cased spelling the labels mostly give it``, for the
+    multi-word ``phrases`` (lowercase, words joined by spaces or hyphens). An occurrence is
+    the whole phrase, compared without case, not run on into a word or hyphen; one that
+    starts a sentence (same definition as ``label_words``) is not counted, since its first
+    capital says nothing. Kept when at least ``min_count`` occurrences remain and one
+    spelling holds at least ``share`` of them. One pass over the labels: the phrases are
+    indexed by their first two words, so a label word only checks the phrases starting
+    with it and its neighbour.
+
+    >>> labels = ["la maladie de Charcot-Marie-Tooth", "une Charcot-Marie-Tooth", "pas de Charcot-Marie-Tooth",
+    ...           "Charcot-marie-tooth", "vu. Charcot-marie-tooth", "un CKD-EPI", "le CKD-EPI", "le CKD-epi",
+    ...           "le Gougerot-Sjogren", "un Gougerot-Sjogren", "un ckd-epi-like"]
+    >>> label_phrase_casing(labels, {"charcot-marie-tooth", "ckd-epi", "gougerot-sjogren"})
+    {'charcot-marie-tooth': 'Charcot-Marie-Tooth'}
+    >>> label_phrase_casing(labels + ["et CKD-EPI", "du CKD-EPI"], {"ckd-epi"})
+    {'ckd-epi': 'CKD-EPI'}
+    """
+    index: dict[tuple[str, str], list[str]] = {}
+    for p in sorted(phrases):
+        ws = _WORD_RE.findall(p)
+        if len(ws) > 1:
+            index.setdefault((ws[0], ws[1]), []).append(p)
+    seen: dict[str, Counter] = {}
+    for label in labels:
+        words = label_words(label)
+        for (m, initial), (m2, _) in zip(words, words[1:]):
+            if initial:
+                continue
+            for p in index.get((m.group(0).lower(), m2.group(0).lower()), ()):
+                s, e = m.start(), m.start() + len(p)
+                if label[s:e].lower() == p and not _AFTER_WORD.match(label, e):
+                    seen.setdefault(p, Counter())[label[s:e]] += 1
+    out = {}
+    for p, c in sorted(seen.items()):
+        (top, n), total = c.most_common(1)[0], sum(c.values())
+        if total >= min_count and n >= share * total:
+            out[p] = top
+    return out
+
+
+def recase_phrases(rules: list[dict], casing: dict[str, str]) -> list[tuple[str, str]]:
+    """Replace each replacement found whole in ``casing`` (lowercased) by its spelling there,
+    in place; returns the ``(old, new)`` changed. Running it twice changes nothing.
+
+    >>> rules = [{"replacement": "Charcot-marie-Tooth"}, {"replacement": "CKD-EPI"}]
+    >>> recase_phrases(rules, {"charcot-marie-tooth": "Charcot-Marie-Tooth", "ckd-epi": "CKD-EPI"})
+    [('Charcot-marie-Tooth', 'Charcot-Marie-Tooth')]
+    >>> recase_phrases(rules, {"charcot-marie-tooth": "Charcot-Marie-Tooth"})
+    []
+    """
+    changed = []
+    for r in rules:
+        new = casing.get(r["replacement"].lower(), r["replacement"])
+        if new != r["replacement"]:
+            changed.append((r["replacement"], new))
+            r["replacement"] = new
+    return changed
+
+
 def replacement_words(rules: list[dict]) -> set[str]:
     """The lowercased words of every replacement, what ``label_casing`` needs to look at."""
     return {w.lower() for r in rules for w in _WORD_RE.findall(r["replacement"])}
@@ -184,7 +264,7 @@ def replacement_words(rules: list[dict]) -> set[str]:
 @click.option("--labels", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="NeMo manifests (text field): keep only the respellings their converted labels back")
 @click.option("--no-conventions", is_flag=True, help="do not respell the replacements")
-@click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing")
+@click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing (words and whole phrases)")
 def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_conventions: bool, no_recase: bool) -> None:
     rules = b.load_rules(src)
     n0 = len(rules)
@@ -198,6 +278,8 @@ def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_c
     if texts is not None and not no_recase:
         changed = recase(rules, label_casing(texts, replacement_words(rules)))
         logger.info(f"{len(changed)} replacements recased to the labels' casing: {sorted(set(changed))[:20]}")
+        changed = recase_phrases(rules, label_phrase_casing(texts, {r["replacement"].lower() for r in rules}))
+        logger.info(f"{len(changed)} replacements recased to the labels' whole-phrase casing: {sorted(set(changed))[:20]}")
     dst.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rules), encoding="utf-8")
     logger.info(f"wrote {dst}")
 

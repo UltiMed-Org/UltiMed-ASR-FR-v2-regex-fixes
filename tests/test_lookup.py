@@ -300,6 +300,9 @@ RESOLVED = [
     ("gleasone 7", "Gleason 7"), ("la capsule de gleisson", "la capsule de Glisson"),
     ("60 unités houndsfield", "60 unités Hounsfield"), ("une anio-irm", "une angio-IRM"),
     ("maladie de macardel", "maladie de McArdle"),
+    # and the whole phrase's casing when the per-word step leaves it half done (marie, epi, luc also appear lowercase)
+    ("maladie de charcot-mary-tooth", "maladie de Charcot-Marie-Tooth"), ("le ckdpi", "le CKD-EPI"),
+    ("un abord de caldwell-luk", "un abord de Caldwell-Luc"),
 ]
 
 
