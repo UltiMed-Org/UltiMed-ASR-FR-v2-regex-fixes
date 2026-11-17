@@ -116,7 +116,7 @@ antibial	before:antérieure	en tibiale
 antibial	*	en tibial
 # glissonne: gleason after "score de" or before a number (2 to 10), glisson after "capsule de",
 # else nothing. glissone (one n) was added by Claude on 2026-11-17 as the same decision applied to
-# the one-n spelling, pending the user's confirmation.
+# the one-n spelling, confirmed by the owner the same day.
 # glison (one s, one n) was added on 2026-11-17 by the owner's decision "only next to score"
 # (gleason after "score de" or before 2 to 10, glisson after "capsule de", else nothing), written with Claude Code.
 glissonne	after:score de	gleason
