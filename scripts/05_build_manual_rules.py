@@ -67,6 +67,7 @@ def resolution_rule(variant: str, context: str, replacement: str) -> tuple[str, 
 
     ``*`` is a plain rule. ``after:WORDS`` puts the context words in the variant and the
     replacement (``after:de`` with a replacement starting with ``d'`` consumes the ``de``).
+    ``before:WORDS`` is its mirror: the words follow the variant and the replacement.
     ``before_vowel`` gives a rule that ends on the whitespace before a word starting with a
     vowel or h, which the replacement eats (02's ``before_vowel_pattern``).
 
@@ -75,6 +76,9 @@ def resolution_rule(variant: str, context: str, replacement: str) -> tuple[str, 
     ['scanner lodose', "l'areus", 'de démolyse']
     >>> resolution_rule("areus", "after:l'", "Aerius")[1]["replacement"], resolution_rule("matro", "*", "")[1]
     ("l'Aerius", None)
+    >>> r = resolution_rule("antibial", "before:postérieure", "en tibiale")[1]
+    >>> r["variant"], r["replacement"]
+    ('antibial postérieure', 'en tibiale postérieure')
     """
     rule = {"variant": variant, "replacement": replacement}
     if context.startswith("after:"):
@@ -83,6 +87,9 @@ def resolution_rule(variant: str, context: str, replacement: str) -> tuple[str, 
             sep = "" if words.endswith("'") else " "
             rule["replacement"] = words + sep + replacement
         rule["variant"] = words + ("" if words.endswith("'") else " ") + variant
+    elif context.startswith("before:"):
+        words = context[len("before:"):]
+        rule["variant"], rule["replacement"] = f"{variant} {words}", f"{replacement} {words}"
     elif context == "before_vowel":
         rule["before_vowel"] = True
     else:

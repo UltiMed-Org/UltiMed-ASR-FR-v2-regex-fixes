@@ -229,6 +229,7 @@ The v2 files overlap, and 35 variant pairs got a different replacement depending
 
 - context `*`: anywhere (`ostradiol` -> `estradiol`);
 - `after:WORDS`: only right after those words, which the rule keeps (`lodose` after `scanner` -> `scanner low-dose`); `after:de` with a replacement starting with `d'` consumes the `de` (`de démolyse` -> `d'hémolyse`), `after:l'` glues (`l'areus` -> `l'Aerius`);
+- `before:WORDS`: the mirror of `after:WORDS`, only right before those words, which the rule keeps (`antibial` before `postérieure` -> `en tibiale postérieure`, `glissonne` before `7` -> `gleason 7`);
 - `before_vowel`: only when the next word starts with a vowel or `h`, the space included (`trocarde aspiration` -> `trocart d'aspiration`; 02's `before_vowel_pattern`, never merged by 03, `"before_vowel": true` in the lookup);
 - an empty replacement: no rule at all for the variant in that context (too ambiguous), and no later line may fix it.
 
