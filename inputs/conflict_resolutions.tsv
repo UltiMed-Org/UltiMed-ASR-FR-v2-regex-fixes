@@ -119,6 +119,8 @@ antibial	*	en tibial
 # the one-n spelling, confirmed by the owner the same day.
 # glison (one s, one n) was added on 2026-11-17 by the owner's decision "only next to score"
 # (gleason after "score de" or before 2 to 10, glisson after "capsule de", else nothing), written with Claude Code.
+# All three: gleason also right after the article "le" ("le glison est de 7", "Le glissonne à 8"),
+# owner's decision of 2026-11-17 (near capsule -> glisson, near score or a number -> gleason), written with Claude Code.
 glissonne	after:score de	gleason
 glissonne	after:capsule de	glisson
 glissonne	before:2	gleason
@@ -130,6 +132,7 @@ glissonne	before:7	gleason
 glissonne	before:8	gleason
 glissonne	before:9	gleason
 glissonne	before:10	gleason
+glissonne	after:le	gleason
 glissonne	*	
 glissone	after:score de	gleason
 glissone	after:capsule de	glisson
@@ -142,6 +145,7 @@ glissone	before:7	gleason
 glissone	before:8	gleason
 glissone	before:9	gleason
 glissone	before:10	gleason
+glissone	after:le	gleason
 glissone	*	
 glison	after:score de	gleason
 glison	after:capsule de	glisson
@@ -154,4 +158,5 @@ glison	before:7	gleason
 glison	before:8	gleason
 glison	before:9	gleason
 glison	before:10	gleason
+glison	after:le	gleason
 glison	*	

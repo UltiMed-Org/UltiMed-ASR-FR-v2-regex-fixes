@@ -290,7 +290,10 @@ RESOLVED = [
     ("ISUP4, glissone sensible", "ISUP4, glissone sensible"), ("glissonne 34", "glissonne 34"),
     # glison: same decision, only next to score (owner, 2026-11-17); the learned PARHAF rule is gone
     ("score de glison 7", "score de gleason 7"), ("glison 7 (3+4)", "gleason 7 (3+4)"),
-    ("la capsule de glison", "la capsule de glisson"), ("le glison est", "le glison est"),
+    ("la capsule de glison", "la capsule de glisson"),
+    # all three: gleason also right after the article "le" (owner, 2026-11-17), not after a word ending in "le"
+    ("le glison est de 7", "le gleason est de 7"), ("Le glissonne à 8", "Le gleason à 8"),
+    ("un glison isolé", "un glison isolé"), ("la cellule glison", "la cellule glison"),
 ]
 
 
