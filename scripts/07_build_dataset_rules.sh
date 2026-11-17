@@ -23,7 +23,7 @@
 # Outputs in <out dir>: errors.json (01), hyps.jsonl (the subset's hyps), rules.unmerged.jsonl and
 # rules.unmerged.rejected.jsonl (02), rules.merged.jsonl (03, if MERGE_TEXTS), rules.unresolved.jsonl (04),
 # rules.jsonl (09, final: inputs/conflict_resolutions.tsv variants removed, replacements respelled by
-# the label conventions where the labels back it), rules.lookup.json (08, the lookup-table form of rules.jsonl), build.log (every step's full output).
+# the label conventions where the labels back it, recased to the labels' casing), rules.lookup.json (08, the lookup-table form of rules.jsonl), build.log (every step's full output).
 # Written with Claude Code.
 set -euo pipefail
 HYPS=$(readlink -f "$1") OUT=$(readlink -m "$2") SUB=$3; shift 3
@@ -58,7 +58,7 @@ echo "== 04 $(date '+%F %T')"
 ng=(); for g in ${NEWS_GUARD:-}; do ng+=(--guard "$(readlink -f "$g")"); done
 uv run ./04_drop_unk_variants.py "$src" "$OUT/rules.unresolved.jsonl" "${labels[@]}" "${ng[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|occur"
 echo "== 09 $(date '+%F %T')"
-uv run ./09_apply_resolutions.py "$OUT/rules.unresolved.jsonl" "$OUT/rules.jsonl" "${labels[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|respelled|refused"
+uv run ./09_apply_resolutions.py "$OUT/rules.unresolved.jsonl" "$OUT/rules.jsonl" "${labels[@]}" 2>&1 | tee -a "$OUT/build.log" | grep -E "dropped|respelled|refused|recased"
 echo "== 08 $(date '+%F %T')"
 uv run ./08_build_lookup.py "$OUT/rules.jsonl" --out "$OUT/rules.lookup.json" 2>&1 | tee -a "$OUT/build.log" | grep -E "keys|cannot"
 echo "== done $SUB $(date '+%F %T')"

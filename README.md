@@ -10,7 +10,7 @@ License: AGPL-3.0-or-later for everything in this repository (rules, lookup tabl
 
 ## The rules
 
-These are the **v2** rules, built on 2026-11-17 from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
+These are the **v2** rules, built on 2026-11-17 from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|

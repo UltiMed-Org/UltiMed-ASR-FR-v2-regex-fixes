@@ -296,6 +296,10 @@ RESOLVED = [
     ("un glison isolé", "un Gleason isolé"), ("la cellule glison", "la cellule glison"),
     # Gleason and Glisson are names, capitalised; Gleason also right after "un", not after a word ending in "un"
     ("un glison à 7", "un Gleason à 7"), ("Un glissonne 8", "Un Gleason 8"), ("aucun glison", "aucun glison"),
+    # learned replacements carry the labels' casing (09 recase): names capitalised, acronyms in capitals
+    ("gleasone 7", "Gleason 7"), ("la capsule de gleisson", "la capsule de Glisson"),
+    ("60 unités houndsfield", "60 unités Hounsfield"), ("une anio-irm", "une angio-IRM"),
+    ("maladie de macardel", "maladie de McArdle"),
 ]
 
 

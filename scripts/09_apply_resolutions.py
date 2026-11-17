@@ -15,14 +15,20 @@
    ``convention_fixes``, so only accent, hyphen and space respellings count): a learned rule
    must not write ``bévacizumab`` when the conventions, and the convention rules, say
    ``bevacizumab``. With ``--labels``, a respelling is kept only if the labels holding the
-   old replacement, once converted, mostly hold the new one: the replacements are often
-   lowercased (``caldeyro-barcia``), and the conventions glue a lowercase compound they
+   old replacement, once converted, mostly hold the new one: 02's replacements are still
+   lowercase at this step (``caldeyro-barcia``, step 3 recases them), and the conventions glue a lowercase compound they
    leave alone in the labels' own case (``Caldeyro-Barcia``, ``anti-HBs``), like 06's
    label check. ``--no-conventions`` skips this.
+3. With ``--labels``, each word of a replacement is recased to the labels' own casing
+   (``label_casing``): ``gleason`` -> ``Gleason``, ``hta`` -> ``HTA``. 02 copies the lexicon's
+   lowercase canonical form, whereas the labels write a name capitalised and an acronym in
+   capitals. Only a word the labels write the same way every time it is not
+   sentence-initial (and at least ``RECASE_MIN`` times) is recased, so a word that also
+   appears lowercase mid-sentence is left alone. The variants are untouched.
 
 Rules with the same replacement are not re-merged: a merge must be checked on texts (03).
 
-Usage: uv run scripts/09_apply_resolutions.py SRC.jsonl DST.jsonl [--resolutions TSV] [--labels MANIFEST ...] [--no-conventions]
+Usage: uv run scripts/09_apply_resolutions.py SRC.jsonl DST.jsonl [--resolutions TSV] [--labels MANIFEST ...] [--no-conventions] [--no-recase]
 (SRC and DST may be the same file). Called by 07_build_dataset_rules.sh after 04.
 This file was written by Claude Code.
 """
@@ -116,6 +122,61 @@ def apply_conventions(rules: list[dict], labels=None) -> tuple[list[tuple[str, s
     return changed, refused
 
 
+
+RECASE_MIN = 3  # non-initial label occurrences a word needs before its casing is copied
+_WORD_RE = re.compile(rf"[{b._WORD}]+")
+_SENTENCE_END = re.compile(r"[.!?:\n]")
+
+
+def label_casing(labels, words: set[str], min_count: int = RECASE_MIN) -> dict[str, str]:
+    """``lowercased word -> the one cased spelling the labels give it``, for the ``words``
+    (lowercase) whose every non-initial occurrence in ``labels`` is spelled the same way,
+    seen at least ``min_count`` times (``patient`` maps to itself: its sentence-initial
+    capitals are not counted; ``xyz`` is below the threshold). Non-initial: not the text's first word and not right
+    after ``. ! ? :`` or a newline (a capital there says nothing about the word).
+
+    >>> labels = ["Score de Gleason 7.", "un Gleason 8", "le Gleason 9", "Le patient. Patient stable",
+    ...           "Patient vu, patient stable, patient sorti", "voir HTA", "une HTA", "pas d'HTA", "rare Xyz"]
+    >>> label_casing(labels, {"gleason", "patient", "hta", "xyz", "absent"})
+    {'gleason': 'Gleason', 'hta': 'HTA', 'patient': 'patient'}
+    >>> label_casing(["Titre : Patient", "a Patient", "b Patient", "c Patient"], {"patient"})
+    {'patient': 'Patient'}
+    """
+    seen: dict[str, Counter] = {}
+    for label in labels:
+        end = 0
+        for i, m in enumerate(_WORD_RE.finditer(label)):
+            w, gap, end = m.group(0), label[end:m.start()], m.end()
+            low = w.lower()
+            if low in words and i and not _SENTENCE_END.search(gap):
+                seen.setdefault(low, Counter())[w] += 1
+    return {low: next(iter(c)) for low, c in sorted(seen.items())
+            if len(c) == 1 and sum(c.values()) >= min_count}
+
+
+def recase(rules: list[dict], casing: dict[str, str]) -> list[tuple[str, str]]:
+    """Rewrite each replacement's words to their ``casing`` spelling, in place; returns the
+    ``(old, new)`` replacements changed, one per rule. Running it twice changes nothing.
+
+    >>> rules = [{"replacement": "score de gleason"}, {"replacement": "patient"}, {"replacement": "l'hta"}]
+    >>> recase(rules, {"gleason": "Gleason", "hta": "HTA"}), [r["replacement"] for r in rules]
+    ([('score de gleason', 'score de Gleason'), ("l'hta", "l'HTA")], ['score de Gleason', 'patient', "l'HTA"])
+    >>> recase(rules, {"gleason": "Gleason", "hta": "HTA"})
+    []
+    """
+    changed = []
+    for r in rules:
+        new = _WORD_RE.sub(lambda m: casing.get(m.group(0).lower(), m.group(0)), r["replacement"])
+        if new != r["replacement"]:
+            changed.append((r["replacement"], new))
+            r["replacement"] = new
+    return changed
+
+
+def replacement_words(rules: list[dict]) -> set[str]:
+    """The lowercased words of every replacement, what ``label_casing`` needs to look at."""
+    return {w.lower() for r in rules for w in _WORD_RE.findall(r["replacement"])}
+
 @click.command()
 @click.argument("src", type=click.Path(exists=True, path_type=Path))
 @click.argument("dst", type=click.Path(path_type=Path))
@@ -123,16 +184,20 @@ def apply_conventions(rules: list[dict], labels=None) -> tuple[list[tuple[str, s
 @click.option("--labels", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="NeMo manifests (text field): keep only the respellings their converted labels back")
 @click.option("--no-conventions", is_flag=True, help="do not respell the replacements")
-def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_conventions: bool) -> None:
+@click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing")
+def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_conventions: bool, no_recase: bool) -> None:
     rules = b.load_rules(src)
     n0 = len(rules)
     rules, dropped = drop_resolved(rules, resolved_patterns(resolutions.read_text(encoding="utf-8").splitlines()))
     logger.info(f"{src.name}: dropped {dropped} resolved variants, {n0} -> {len(rules)} rules")
+    texts = [json.loads(line)["text"] for mf in labels for line in open(mf, encoding="utf-8")] if labels else None
     if not no_conventions:
-        texts = (json.loads(line)["text"] for mf in labels for line in open(mf, encoding="utf-8")) if labels else None
         changed, refused = apply_conventions(rules, texts)
         logger.info(f"{len(changed)} replacements respelled by the label conventions: {sorted(set(changed))[:20]}")
         logger.info(f"{len(refused)} respellings refused, the labels do not back them: {refused[:20]}")
+    if texts is not None and not no_recase:
+        changed = recase(rules, label_casing(texts, replacement_words(rules)))
+        logger.info(f"{len(changed)} replacements recased to the labels' casing: {sorted(set(changed))[:20]}")
     dst.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rules), encoding="utf-8")
     logger.info(f"wrote {dst}")
 
