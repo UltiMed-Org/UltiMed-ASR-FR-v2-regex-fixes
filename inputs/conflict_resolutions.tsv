@@ -1,4 +1,5 @@
-# Hand decisions for variants that several rule files rewrite differently (decided 2026-11-15).
+# Hand decisions for variants that several rule files rewrite differently (decided 2026-11-15 on the
+# mix7 rules; the block at the end was added 2026-11-17 for the 70/30 blend rules).
 # variant<TAB>context<TAB>replacement, first matching line of a variant wins.
 # context: * = anywhere; after:WORDS = only right after these words (the words are kept, with
 #   after:de the "de " is consumed when the replacement starts with d'); before_vowel = only when
@@ -16,7 +17,7 @@ méthylaminolévulinate	*	méthyle aminolévulinate
 frontoorbitaire	*	fronto-orbitaire
 musculaponévrotique	*	musculoaponévrotique
 périos	*	périoste
-prictest	*	prick-test
+prictest	*	prick test
 pyogenèse	*	pyogenes
 protéinur	*	
 dictère	*	d'ictère
@@ -58,3 +59,26 @@ lodose	after:dite	low-dose
 lodose	after:dites	low-dose
 lodose	after:de la	lordose
 lodose	*	Lodoz
+# 2026-11-17, conflicts new in the 70/30 blend rules
+avalan	after:virus	Avalon
+avalan	*	Havlane
+célesthène	*	celestene
+cerovar	*	sérovar
+chorynebacterium	*	corynebacterium
+dejent	*	Dejean
+d'esténose	*	de sténose
+esténose	*	resténose
+hémipénem	*	imipenem
+zimipénème	*	imipenem
+lipoalbuminémie	after:l'	hypoalbuminémie
+lipoalbuminémie	after:d'	hypoalbuminémie
+lipoalbuminémie	*	l'hypoalbuminémie
+polypsessil	after:des	polypes sessiles
+polypsessil	after:de	polypes sessiles
+polypsessil	after:plusieurs	polypes sessiles
+polypsessil	after:vingtaine de	polypes sessiles
+polypsessil	*	polype sessile
+prictes	after:au	prick test
+prictes	after:le	prick test
+prictes	after:un	prick test
+prictes	*	prick tests
