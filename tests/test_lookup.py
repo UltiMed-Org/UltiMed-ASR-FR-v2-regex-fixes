@@ -284,16 +284,18 @@ RESOLVED = [
     # antibial and glissonne/glissone, through the before:WORDS context
     ("poplité et antibial postérieure", "poplité et en tibiale postérieure"),
     ("antibial antérieure", "en tibiale antérieure"), ("stade 3 antibial et fémoral", "stade 3 en tibial et fémoral"),
-    ("score de Glissone 7", "score de gleason 7"), ("score de glissonne 7", "score de gleason 7"),
-    ("glissonne 3 plus 4", "gleason 3 plus 4"), ("Glissone 10", "Gleason 10"),
-    ("une capsule de Glissone tendue", "une capsule de glisson tendue"),
+    ("score de Glissone 7", "score de Gleason 7"), ("score de glissonne 7", "score de Gleason 7"),
+    ("glissonne 3 plus 4", "Gleason 3 plus 4"), ("Glissone 10", "Gleason 10"),
+    ("une capsule de Glissone tendue", "une capsule de Glisson tendue"),
     ("ISUP4, glissone sensible", "ISUP4, glissone sensible"), ("glissonne 34", "glissonne 34"),
     # glison: same decision, only next to score (owner, 2026-11-17); the learned PARHAF rule is gone
-    ("score de glison 7", "score de gleason 7"), ("glison 7 (3+4)", "gleason 7 (3+4)"),
-    ("la capsule de glison", "la capsule de glisson"),
+    ("score de glison 7", "score de Gleason 7"), ("glison 7 (3+4)", "Gleason 7 (3+4)"),
+    ("la capsule de glison", "la capsule de Glisson"),
     # all three: gleason also right after the article "le" (owner, 2026-11-17), not after a word ending in "le"
-    ("le glison est de 7", "le gleason est de 7"), ("Le glissonne à 8", "Le gleason à 8"),
-    ("un glison isolé", "un glison isolé"), ("la cellule glison", "la cellule glison"),
+    ("le glison est de 7", "le Gleason est de 7"), ("Le glissonne à 8", "Le Gleason à 8"),
+    ("un glison isolé", "un Gleason isolé"), ("la cellule glison", "la cellule glison"),
+    # Gleason and Glisson are names, capitalised; Gleason also right after "un", not after a word ending in "un"
+    ("un glison à 7", "un Gleason à 7"), ("Un glissonne 8", "Un Gleason 8"), ("aucun glison", "aucun glison"),
 ]
 
 

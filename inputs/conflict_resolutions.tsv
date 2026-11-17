@@ -121,42 +121,47 @@ antibial	*	en tibial
 # (gleason after "score de" or before 2 to 10, glisson after "capsule de", else nothing), written with Claude Code.
 # All three: gleason also right after the article "le" ("le glison est de 7", "Le glissonne à 8"),
 # owner's decision of 2026-11-17 (near capsule -> glisson, near score or a number -> gleason), written with Claude Code.
-glissonne	after:score de	gleason
-glissonne	after:capsule de	glisson
-glissonne	before:2	gleason
-glissonne	before:3	gleason
-glissonne	before:4	gleason
-glissonne	before:5	gleason
-glissonne	before:6	gleason
-glissonne	before:7	gleason
-glissonne	before:8	gleason
-glissonne	before:9	gleason
-glissonne	before:10	gleason
-glissonne	after:le	gleason
+# Both are a person's name, so every replacement below is capitalised (Gleason, capsule de Glisson), and
+# all three also get Gleason right after "un" ("un glison à 7"): owner's decision of 2026-11-17, written with Claude Code.
+glissonne	after:score de	Gleason
+glissonne	after:capsule de	Glisson
+glissonne	before:2	Gleason
+glissonne	before:3	Gleason
+glissonne	before:4	Gleason
+glissonne	before:5	Gleason
+glissonne	before:6	Gleason
+glissonne	before:7	Gleason
+glissonne	before:8	Gleason
+glissonne	before:9	Gleason
+glissonne	before:10	Gleason
+glissonne	after:le	Gleason
+glissonne	after:un	Gleason
 glissonne	*	
-glissone	after:score de	gleason
-glissone	after:capsule de	glisson
-glissone	before:2	gleason
-glissone	before:3	gleason
-glissone	before:4	gleason
-glissone	before:5	gleason
-glissone	before:6	gleason
-glissone	before:7	gleason
-glissone	before:8	gleason
-glissone	before:9	gleason
-glissone	before:10	gleason
-glissone	after:le	gleason
+glissone	after:score de	Gleason
+glissone	after:capsule de	Glisson
+glissone	before:2	Gleason
+glissone	before:3	Gleason
+glissone	before:4	Gleason
+glissone	before:5	Gleason
+glissone	before:6	Gleason
+glissone	before:7	Gleason
+glissone	before:8	Gleason
+glissone	before:9	Gleason
+glissone	before:10	Gleason
+glissone	after:le	Gleason
+glissone	after:un	Gleason
 glissone	*	
-glison	after:score de	gleason
-glison	after:capsule de	glisson
-glison	before:2	gleason
-glison	before:3	gleason
-glison	before:4	gleason
-glison	before:5	gleason
-glison	before:6	gleason
-glison	before:7	gleason
-glison	before:8	gleason
-glison	before:9	gleason
-glison	before:10	gleason
-glison	after:le	gleason
+glison	after:score de	Gleason
+glison	after:capsule de	Glisson
+glison	before:2	Gleason
+glison	before:3	Gleason
+glison	before:4	Gleason
+glison	before:5	Gleason
+glison	before:6	Gleason
+glison	before:7	Gleason
+glison	before:8	Gleason
+glison	before:9	Gleason
+glison	before:10	Gleason
+glison	after:le	Gleason
+glison	after:un	Gleason
 glison	*	
