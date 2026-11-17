@@ -82,3 +82,30 @@ prictes	after:au	prick test
 prictes	after:le	prick test
 prictes	after:un	prick test
 prictes	*	prick tests
+# étuximab (amended 2026-11-17): cetuximab after "plus" or a word ending in -s/-sse/-sses/-x (not -ux),
+# rituximab after a word ending in -r, else nothing. The contexts cannot test a suffix, so the
+# previous words are listed: those seen before a *ximab word in the blend70 transcripts, plus common ones.
+étuximab	after:plus	cetuximab
+étuximab	after:sous	cetuximab
+étuximab	after:anticorps	cetuximab
+étuximab	after:folfox	cetuximab
+étuximab	after:puis	cetuximab
+étuximab	after:sans	cetuximab
+étuximab	after:des	cetuximab
+étuximab	after:les	cetuximab
+étuximab	after:ses	cetuximab
+étuximab	after:ces	cetuximab
+étuximab	after:deux	cetuximab
+étuximab	after:après	cetuximab
+étuximab	after:dans	cetuximab
+étuximab	after:depuis	cetuximab
+étuximab	after:par	rituximab
+étuximab	after:pour	rituximab
+étuximab	after:sur	rituximab
+étuximab	after:leur	rituximab
+étuximab	after:initier	rituximab
+étuximab	after:débuter	rituximab
+étuximab	after:arrêter	rituximab
+étuximab	after:associer	rituximab
+étuximab	after:instaurer	rituximab
+étuximab	*	

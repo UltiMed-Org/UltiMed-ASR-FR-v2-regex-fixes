@@ -284,6 +284,11 @@ RESOLVED = [
     ("un polypsessil", "un polype sessile"),
     ("au prictes", "au prick test"), ("le prictes", "le prick test"), ("un prictes", "un prick test"),
     ("des prictes", "des prick tests"),
+    # étuximab: cetuximab after plus/-s/-x, rituximab after -r, else untouched (listed words only)
+    ("FOLFOX plus étuximab", "FOLFOX plus cetuximab"), ("sous étuximab", "sous cetuximab"),
+    ("traité par étuximab", "traité par rituximab"), ("relais pour étuximab", "relais pour rituximab"),
+    ("le étuximab", "le étuximab"), ("dose d'étuximab", "dose d'étuximab"), ("aux étuximab", "aux étuximab"),
+    ("étuximab", "étuximab"),
 ]
 
 
@@ -291,10 +296,10 @@ def test_resolutions() -> None:
     """The hand decisions of conflict_resolutions.tsv, end to end on the committed files
     (regex and lookup, learned files then manual), with concrete sentences.
 
-    Three 2026-11-17 decisions are not covered because the tsv contexts (``*``,
+    Two 2026-11-17 decisions are not covered because the tsv contexts (``*``,
     ``after:WORDS``, ``before_vowel``) cannot express them: ``antibial`` (depends on the
-    NEXT word), ``étuximab`` (depends on the previous word's suffix) and ``glissonne``
-    (depends on a following number)."""
+    NEXT word) and ``glissonne`` (depends on a following number). ``étuximab`` depends on
+    the previous word's suffix, so the tsv lists the previous words instead."""
     fixes = [b.compile_rules(_rules(n)) for n in FILES]
     lks = [apply.Lookup.load(REPO / "lookup" / f"{n}_fix_rules.lookup.json") for n in FILES]
     bad = []
