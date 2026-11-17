@@ -296,6 +296,9 @@ RESOLVED = [
     ("glissonne 3 plus 4", "gleason 3 plus 4"), ("Glissone 10", "Gleason 10"),
     ("une capsule de Glissone tendue", "une capsule de glisson tendue"),
     ("ISUP4, glissone sensible", "ISUP4, glissone sensible"), ("glissonne 34", "glissonne 34"),
+    # glison: same decision, only next to score (owner, 2026-11-17); the learned PARHAF rule is gone
+    ("score de glison 7", "score de gleason 7"), ("glison 7 (3+4)", "gleason 7 (3+4)"),
+    ("la capsule de glison", "la capsule de glisson"), ("le glison est", "le glison est"),
 ]
 
 
@@ -303,7 +306,7 @@ def test_resolutions() -> None:
     """The hand decisions of conflict_resolutions.tsv, end to end on the committed files
     (regex and lookup, learned files then manual), with concrete sentences.
 
-    ``antibial`` and ``glissonne``/``glissone`` depend on the next word (``before:WORDS``).
+    ``antibial`` and ``glissonne``/``glissone``/``glison`` depend on the next word (``before:WORDS``).
     ``étuximab`` depends on the previous word's suffix, which no context can test, so the
     tsv lists the previous words instead."""
     fixes = [b.compile_rules(_rules(n)) for n in FILES]

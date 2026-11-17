@@ -14,10 +14,10 @@ These are the **v2** rules, built on 2026-11-17 from the v2 model alone (the 70/
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,052 | 1,996 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,063 | 1,996 |
 | `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,986 | 2,424 |
 | `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,577 | 18,274 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,129 | 2,171 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,128 | 2,171 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
@@ -108,10 +108,10 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 1,996 | 2,052 | 0 | 784,312 | 117,575 |
+| `manual_fix_rules` | 1,996 | 2,063 | 0 | 784,857 | 117,724 |
 | `drug_fix_rules` | 2,424 | 4,986 | 20 | 1,139,208 | 150,257 |
 | `dictionary_fix_rules` | 18,274 | 43,577 | 396 | 10,084,148 | 1,376,900 |
-| `parhaf_fix_rules` | 2,171 | 4,129 | 35 | 1,075,043 | 136,328 |
+| `parhaf_fix_rules` | 2,171 | 4,128 | 35 | 1,075,014 | 136,318 |
 | `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,627 |
 | `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,420 |
 
