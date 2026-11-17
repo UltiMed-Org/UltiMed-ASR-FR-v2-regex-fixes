@@ -14,10 +14,10 @@ These are the **v2** rules, built on 2026-11-17 from the v2 model alone (the 70/
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,004 | 1,959 |
-| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,987 | 2,424 |
-| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,580 | 18,275 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,133 | 2,172 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,027 | 1,982 |
+| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,986 | 2,424 |
+| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,579 | 18,275 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,132 | 2,172 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
@@ -108,16 +108,16 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 1,959 | 2,004 | 0 | 769,339 | 115,345 |
-| `drug_fix_rules` | 2,424 | 4,987 | 20 | 1,139,262 | 150,269 |
-| `dictionary_fix_rules` | 18,275 | 43,580 | 396 | 10,084,681 | 1,376,971 |
-| `parhaf_fix_rules` | 2,172 | 4,133 | 35 | 1,075,621 | 136,410 |
+| `manual_fix_rules` | 1,982 | 2,027 | 0 | 778,242 | 116,657 |
+| `drug_fix_rules` | 2,424 | 4,986 | 20 | 1,139,208 | 150,257 |
+| `dictionary_fix_rules` | 18,275 | 43,579 | 396 | 10,084,627 | 1,376,959 |
+| `parhaf_fix_rules` | 2,172 | 4,132 | 35 | 1,075,563 | 136,398 |
 | `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,627 |
 | `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,420 |
 
 ### How the lookups are built
 
-`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 24,990 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,013 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 
