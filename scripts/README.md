@@ -38,7 +38,7 @@ This writes `v1/drug_fix_rules.jsonl` (one rule per line, apply top to bottom) a
 
 Apply the rules with `fix = compile_rules(rules)` then `fix(text)` from `02_build_fix_rules.py` (`load_rules(path)` reads the JSONL). `compile_rules` indexes each rule by its anchor, the longest accent-folded word of its variant, so a text only runs the few rules whose anchor it contains: same output as `apply_rules(text, rules)` (every rule in order, the reference implementation) but about 150x faster (0.11 ms against 16.9 ms per text, measured with 1.6k rules). You can also copy the patterns into any regex engine that supports lookbehind. Each pattern is case-insensitive: compile it with the `i` flag, plus `u` in JavaScript (`new RegExp(pattern, 'giu')`), and when the matched text starts with a capital and the replacement does not, capitalise the replacement (`Myrtazapine` -> `Mirtazapine`). The word bounds spell out their letter class instead of using `\w`, so the patterns behave the same in Python and JavaScript. `scripts/bench/regex-rescore.mjs` in the [parakeet-tdt-0.6b-v3-ultra-onnx](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx) repo is a JavaScript port, anchor index included (0 mismatches against Python on 41,743 transcripts).
 
-## v2 rules (`rules/`, 2026-11-13, one list per subset)
+## v2 rules (`rules/`, 2026-11-17, one list per subset)
 
 Rebuilt with Claude Code for the v2 release, from the v2 model alone (the 70/30 blend of mix7 with v1, fp32 ONNX; first built from mix7 alone on 2026-11-13, rebuilt 2026-11-17) transcribing all 602,776 clips of the v2 corpus, and split by subset: `rules/drug_fix_rules.jsonl`, `rules/dictionary_fix_rules.jsonl`, `rules/parhaf_fix_rules.jsonl`, `rules/parrot_fix_rules.jsonl`, `rules/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` in `rejected/` (plus `rejected/drug_asr_errors.json`; local only, not in the repo). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt from transcripts (05 builds it from `inputs/`): apply it LAST, after the drug and term files (it went first until 2026-11-15, see "Hand-written rules").
 
@@ -57,20 +57,22 @@ Two builds per subset, as in v1:
 - **A, release (committed)**: all splits. Its test numbers show coverage, not generalization: the test clips were in the build.
 - **B, held-out (not committed)**: train + val only, with the real-text labels limited to train + val too, and no merge. Its test numbers estimate how the rules do on unseen clips. PARROT is test-only in v2, so it has no B build and no held-out number. For drugs a train-only build (T) was also made.
 
-Build counts (02 then 03 merge then 04; candidate errors = misspelled occurrences found by 01):
+Build counts of the blend70 rebuild (2026-11-17, measured with Claude Code from the `build.log` of each build; 02 then 03 merge then 04; candidate errors = misspelled occurrences found by 01; "final" is before 09 removes the hand-decided variants, see "Conflict decisions"):
 
 | subset | clips | misspelled | 02 rules (errors covered) | merged | final | rejected |
 |---|---|---|---|---|---|---|
-| drugs A | 21,900 | 9,782 | 4,854 (8,604) | 2,388 | 2,388 | 622: real_text 240, short 117, far 105, common_words 86, imprecise 42, other_term 21, ambiguous 10, trailing_a 1 |
-| drugs B | 19,841 | 8,852 | 4,534 (7,791) | | 4,534 | 571 |
-| drugs T | 17,822 | 7,944 | 4,236 (6,995) | | 4,236 | 519 |
-| dictionary A | 534,349 | 180,728 | 43,032 (107,931) | 18,241 | 18,137 | 14,526: real_text 5,497, other_term 2,298, common_words 1,897, imprecise 1,649, short 1,600, far 1,012, ambiguous 436, contains_target 130, trailing_a 5, french_word 2 |
-| dictionary B | 484,458 | 163,873 | 40,442 (97,939) | | 40,244 | 13,762 |
-| PARHAF A | 43,384 | 16,518 | 3,979 (9,006) | 2,110 | 2,103 | 2,132: real_text 896, other_term 643, short 199, common_words 135, far 111, imprecise 106, ambiguous 28, contains_target 11, trailing_a 2, french_word 1 |
-| PARHAF B | 37,895 | 14,419 | 3,589 (7,805) | | 3,572 | 1,958 |
-| PARROT A | 1,548 | 682 | 154 (221) | 121 | 121 | 221: real_text 98, other_term 97, common_words 9, short 8, far 7, imprecise 2 |
-| acronyms A | 1,595 | 87 | 43 (43) | 43 | 43 | 40: other_term 19, real_text 14, common_words 4, short 2, imprecise 1 |
-| acronyms B | 1,444 | 77 | 38 (38) | | 38 | 35 |
+| drugs A | 21,900 | 10,500 | 5,000 (9,293) | 2,429 | 2,429 | 652: real_text 227, far 121, short 120, common_words 104, imprecise 48, other_term 22, ambiguous 8, contains_target 1, trailing_a 1 |
+| drugs B | 19,841 | 9,506 | 4,689 (8,410) | | 4,689 | 602 |
+| drugs T | 17,822 | 8,518 | 4,373 (7,541) | | 4,373 | 550 |
+| dictionary A | 534,349 | 194,104 | 43,823 (116,880) | 18,396 | 18,287 | 14,509: real_text 5,589, other_term 2,189, common_words 1,853, imprecise 1,752, short 1,544, far 1,010, ambiguous 422, contains_target 142, trailing_a 5, french_word 3 |
+| dictionary B | 484,458 | 176,116 | 41,300 (106,296) | | 41,090 | 13,734 |
+| PARHAF A | 43,384 | 17,660 | 4,177 (9,886) | 2,193 | 2,184 | 2,141: real_text 902, other_term 612, short 210, common_words 139, imprecise 133, far 108, ambiguous 20, contains_target 13, trailing_a 3, french_word 1 |
+| PARHAF B | 37,895 | 15,395 | 3,767 (8,587) | | 3,747 | 1,970 |
+| PARROT A | 1,548 | 699 | 148 (216) | 118 | 118 | 220: other_term 102, real_text 98, common_words 9, far 5, short 4, imprecise 2 |
+| acronyms A | 1,595 | 101 | 43 (44) | 43 | 43 | 51: other_term 20, real_text 19, common_words 6, short 5, contains_target 1 |
+| acronyms B | 1,444 | 89 | 40 (40) | | 40 | 44 |
+
+History: the first build, from mix7 alone (2026-11-13), had 2,388 drug, 18,137 dictionary, 2,103 PARHAF, 121 PARROT and 43 acronym rules after 04. The blend70 model makes more misspellings on the same clips (drugs 10,500 vs 9,782), hence slightly more rules.
 
 For comparison v1 (five models, all splits, so not like for like): `drug_fix_rules.jsonl` 3,963 rules, 2,732 rejected; `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list) 35,876 rules, 25,466 rejected.
 
@@ -78,19 +80,22 @@ Check with the ultra repo's `evalrules.py` (unchanged): the v2 model's hyps on e
 
 | test split | no rules | v1 | A (coverage) | B (held-out) | T (train only) |
 |---|---|---|---|---|---|
-| drugs (2,059 clips) | 3.14 % | 2.40 % (428 / 1) | 1.77 % (767 / 0) | 2.37 % (455 / 0) | 2.38 % (444 / 0) |
-| dictionary (49,891) | 2.39 % | 2.11 % (5,653 / 693) | 1.89 % (8,693 / 3) | 2.04 % (6,418 / 18) | |
-| PARHAF (5,489) | 2.76 % | 2.60 % (545 / 6) | 2.47 % (894 / 0) | 2.58 % (600 / 1) | |
-| PARROT (1,548) | 3.68 % | 3.56 % (86 / 10) | 3.37 % (190 / 0) | none (test-only) | |
-| acronyms (151) | 2.90 % | 2.75 % (4 / 0) | 2.72 % (5 / 0) | 2.90 % (0 / 0) | |
+| drugs (2,059 clips) | 3.53 % | 2.67 % (496 / 1) | 2.05 % (827 / 0) | 2.63 % (529 / 0) | 2.67 % (508 / 0) |
+| dictionary (49,891) | 2.54 % | 2.22 % (6,341 / 674) | 2.00 % (9,298 / 2) | 2.15 % (7,091 / 15) | |
+| PARHAF (5,489) | 2.85 % | 2.67 % (616 / 7) | 2.53 % (984 / 0) | 2.65 % (664 / 2) | |
+| PARROT (1,548) | 3.64 % | 3.50 % (91 / 9) | 3.34 % (186 / 0) | none (test-only) | |
+| acronyms (151) | 2.96 % | 2.84 % (3 / 0) | 2.81 % (4 / 0) | 2.93 % (1 / 0) | |
+
+These are the blend70 numbers (2026-11-17, measured with Claude Code). The A column was evaluated on build A as learned, before 09 removed the hand-decided variants (2,424 drug, 18,279 dictionary, 2,177 PARHAF, 117 PARROT, 43 acronym rules); B had 4,681 / 41,072 / 3,732 / 40 rules and T 4,365. History: on the mix7 hyps the same table read 3.14 % -> 1.77 % (A) for drugs, 2.39 % -> 1.89 % for dictionary, 2.76 % -> 2.47 % for PARHAF, 3.68 % -> 3.37 % for PARROT and 2.90 % -> 2.72 % for acronyms.
 
 | rewritten lines | v2 labels | fr news 2023 | en Wikipedia | VoxPopuli fr |
 |---|---|---|---|---|
 | v1 drug rules | 28 | 2 | 1,097 | 0 |
-| drugs A / B / T | 0 / 1 / 4 | 1 / 1 / 1 | 195 / 130 / 127 | 0 / 0 / 0 |
+| drugs A / B / T | 0 / 1 / 4 | 0 / 0 / 0 | 278 / 214 / 215 | 0 / 0 / 0 |
 | v1 term rules | 9,496 | 24 | 9,413 | 1 |
-| dictionary A / B | 0 / 33 | 10 / 10 | 3,359 / 3,361 | 0 / 0 |
-| PARHAF A / B | 0 / 4 | 2 / 2 | 116 / 108 | 0 / 0 |
+| dictionary A / B | 0 / 31 | 14 / 13 | 3,606 / 3,597 | 0 / 0 |
+| PARHAF A / B | 0 / 2 | 4 / 4 | 165 / 180 | 0 / 0 |
+| PARROT A | 0 | 0 | 1 | 0 |
 | acronyms A / B | 0 / 0 | 0 / 0 | 1 / 1 | 0 / 0 |
 
 The v1 term rules rewrite 9,496 correct v2 labels: they carry v1 spellings onto v2 text (`acétoacétate` -> `acéto-acétate`), which is why they had to be rebuilt. English Wikipedia is still rewritten by the drug rules (`tomato` -> `stomato`, `insulator` -> `Insulatard`, `invents` -> `Invanz`): the rules are for French. Held-out fixes look like `Vinclixto` -> `Venclyxto`, `Pegasis` -> `Pegasys`, `céfadroxyl` -> `céfadroxil`, `Rifina` -> `Rifinah`.
