@@ -289,6 +289,13 @@ RESOLVED = [
     ("traité par étuximab", "traité par rituximab"), ("relais pour étuximab", "relais pour rituximab"),
     ("le étuximab", "le étuximab"), ("dose d'étuximab", "dose d'étuximab"), ("aux étuximab", "aux étuximab"),
     ("étuximab", "étuximab"),
+    # antibial and glissonne/glissone, through the before:WORDS context
+    ("poplité et antibial postérieure", "poplité et en tibiale postérieure"),
+    ("antibial antérieure", "en tibiale antérieure"), ("stade 3 antibial et fémoral", "stade 3 en tibial et fémoral"),
+    ("score de Glissone 7", "score de gleason 7"), ("score de glissonne 7", "score de gleason 7"),
+    ("glissonne 3 plus 4", "gleason 3 plus 4"), ("Glissone 10", "Gleason 10"),
+    ("une capsule de Glissone tendue", "une capsule de glisson tendue"),
+    ("ISUP4, glissone sensible", "ISUP4, glissone sensible"), ("glissonne 34", "glissonne 34"),
 ]
 
 
@@ -296,10 +303,9 @@ def test_resolutions() -> None:
     """The hand decisions of conflict_resolutions.tsv, end to end on the committed files
     (regex and lookup, learned files then manual), with concrete sentences.
 
-    Two 2026-11-17 decisions are not covered because the tsv contexts (``*``,
-    ``after:WORDS``, ``before_vowel``) cannot express them: ``antibial`` (depends on the
-    NEXT word) and ``glissonne`` (depends on a following number). ``étuximab`` depends on
-    the previous word's suffix, so the tsv lists the previous words instead."""
+    ``antibial`` and ``glissonne``/``glissone`` depend on the next word (``before:WORDS``).
+    ``étuximab`` depends on the previous word's suffix, which no context can test, so the
+    tsv lists the previous words instead."""
     fixes = [b.compile_rules(_rules(n)) for n in FILES]
     lks = [apply.Lookup.load(REPO / "lookup" / f"{n}_fix_rules.lookup.json") for n in FILES]
     bad = []

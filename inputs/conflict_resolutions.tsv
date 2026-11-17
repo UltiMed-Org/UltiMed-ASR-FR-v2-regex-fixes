@@ -2,7 +2,8 @@
 # mix7 rules; the block at the end was added 2026-11-17 for the 70/30 blend rules).
 # variant<TAB>context<TAB>replacement, first matching line of a variant wins.
 # context: * = anywhere; after:WORDS = only right after these words (the words are kept, with
-#   after:de the "de " is consumed when the replacement starts with d'); before_vowel = only when
+#   after:de the "de " is consumed when the replacement starts with d'); before:WORDS = only right
+#   before these words (the mirror of after:, the words are kept); before_vowel = only when
 #   the next word starts with a vowel or h (the space after the variant is consumed).
 # An empty replacement means: no rule at all for this variant in that context (too ambiguous).
 # Every variant listed here is removed from the learned rule files; the surviving lines become
@@ -109,3 +110,34 @@ prictes	*	prick tests
 étuximab	after:associer	rituximab
 étuximab	after:instaurer	rituximab
 étuximab	*	
+# antibial: en tibiale before postérieure/antérieure, else en tibial.
+antibial	before:postérieure	en tibiale
+antibial	before:antérieure	en tibiale
+antibial	*	en tibial
+# glissonne: gleason after "score de" or before a number (2 to 10), glisson after "capsule de",
+# else nothing. glissone (one n) was added by Claude on 2026-11-17 as the same decision applied to
+# the one-n spelling, pending the user's confirmation.
+glissonne	after:score de	gleason
+glissonne	after:capsule de	glisson
+glissonne	before:2	gleason
+glissonne	before:3	gleason
+glissonne	before:4	gleason
+glissonne	before:5	gleason
+glissonne	before:6	gleason
+glissonne	before:7	gleason
+glissonne	before:8	gleason
+glissonne	before:9	gleason
+glissonne	before:10	gleason
+glissonne	*	
+glissone	after:score de	gleason
+glissone	after:capsule de	glisson
+glissone	before:2	gleason
+glissone	before:3	gleason
+glissone	before:4	gleason
+glissone	before:5	gleason
+glissone	before:6	gleason
+glissone	before:7	gleason
+glissone	before:8	gleason
+glissone	before:9	gleason
+glissone	before:10	gleason
+glissone	*	
