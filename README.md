@@ -10,15 +10,15 @@ License: AGPL-3.0-or-later for everything in this repository (rules, lookup tabl
 
 ## The rules
 
-These are the **v2** rules, built on 2026-11-13 from the v2 model alone (the "mix7" weight soup, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
+These are the **v2** rules, built on 2026-11-17 from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 1,982 | 1,940 |
-| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,839 | 2,381 |
-| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 42,796 | 18,125 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 3,939 | 2,094 |
-| `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 153 | 120 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,004 | 1,959 |
+| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,987 | 2,424 |
+| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,580 | 18,275 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,133 | 2,172 |
+| `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
 The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,116 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
@@ -108,16 +108,16 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 1,940 | 1,982 | 0 | 762,040 | 114,264 |
-| `drug_fix_rules` | 2,381 | 4,839 | 23 | 1,115,528 | 146,232 |
-| `dictionary_fix_rules` | 18,125 | 42,796 | 388 | 9,932,118 | 1,353,509 |
-| `parhaf_fix_rules` | 2,094 | 3,939 | 35 | 1,031,261 | 129,842 |
-| `parrot_fix_rules` | 120 | 153 | 0 | 55,770 | 8,804 |
-| `acronyms_fix_rules` | 43 | 43 | 1 | 20,892 | 4,439 |
+| `manual_fix_rules` | 1,959 | 2,004 | 0 | 769,339 | 115,345 |
+| `drug_fix_rules` | 2,424 | 4,987 | 20 | 1,139,262 | 150,269 |
+| `dictionary_fix_rules` | 18,275 | 43,580 | 396 | 10,084,681 | 1,376,971 |
+| `parhaf_fix_rules` | 2,172 | 4,133 | 35 | 1,075,621 | 136,410 |
+| `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,627 |
+| `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,420 |
 
 ### How the lookups are built
 
-`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 24,704 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 24,990 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 

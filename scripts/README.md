@@ -40,7 +40,7 @@ Apply the rules with `fix = compile_rules(rules)` then `fix(text)` from `02_buil
 
 ## v2 rules (`rules/`, 2026-11-13, one list per subset)
 
-Rebuilt with Claude Code for the v2 release, from the v2 model alone (mix7, fp32 ONNX) transcribing all 602,776 clips of the v2 corpus, and split by subset: `rules/drug_fix_rules.jsonl`, `rules/dictionary_fix_rules.jsonl`, `rules/parhaf_fix_rules.jsonl`, `rules/parrot_fix_rules.jsonl`, `rules/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` in `rejected/` (plus `rejected/drug_asr_errors.json`; local only, not in the repo). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt from transcripts (05 builds it from `inputs/`): apply it LAST, after the drug and term files (it went first until 2026-11-15, see "Hand-written rules").
+Rebuilt with Claude Code for the v2 release, from the v2 model alone (the 70/30 blend of mix7 with v1, fp32 ONNX; first built from mix7 alone on 2026-11-13, rebuilt 2026-11-17) transcribing all 602,776 clips of the v2 corpus, and split by subset: `rules/drug_fix_rules.jsonl`, `rules/dictionary_fix_rules.jsonl`, `rules/parhaf_fix_rules.jsonl`, `rules/parrot_fix_rules.jsonl`, `rules/acronyms_fix_rules.jsonl`, each with its `*.rejected.jsonl` in `rejected/` (plus `rejected/drug_asr_errors.json`; local only, not in the repo). Same JSONL format as the v1 files, so they are drop-in. The v1 files above are unchanged. `manual_fix_rules.jsonl` is dataset-agnostic and is not rebuilt from transcripts (05 builds it from `inputs/`): apply it LAST, after the drug and term files (it went first until 2026-11-15, see "Hand-written rules").
 
 Every replacement comes from the v2 labels (02 copies the label text a rule was learned from), so the v1 caveat about old spellings no longer applies. Note the v2 labels themselves carry both spellings of some drugs (`bevacizumab` 363 vs `bévacizumab` 151, `perindopril` 1,055 vs `périndopril` 1,672 in `full.jsonl`), so the accent a rule writes depends on the clip it was learned from.
 
@@ -48,8 +48,8 @@ Every replacement comes from the v2 labels (02 copies the label text a rule was 
 
 ```bash
 D=99_hf_release/data/NeMO_files GUARDS=.../fr-wikipedia-1M.txt NAMES=.../fr-names.txt \
-  MERGE_TEXTS="full.mix7-onnx-fp32.hyp.jsonl $D/full.jsonl .../fr-wikipedia-1M.txt .../en-wikipedia-1M.txt .../fr-news-2023-100K.txt" \
-  scripts/07_build_dataset_rules.sh full.mix7-onnx-fp32.hyp.jsonl out/A/drugs drugs train val test
+  MERGE_TEXTS="full.blend70-onnx-fp32.hyp.jsonl $D/full.jsonl .../fr-wikipedia-1M.txt .../en-wikipedia-1M.txt .../fr-news-2023-100K.txt" \
+  scripts/07_build_dataset_rules.sh full.blend70-onnx-fp32.hyp.jsonl out/A/drugs drugs train val test
 ```
 
 Two builds per subset, as in v1:
