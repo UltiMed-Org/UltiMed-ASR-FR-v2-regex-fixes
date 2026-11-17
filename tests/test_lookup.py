@@ -32,28 +32,20 @@ This file was written by Claude Code.
 from __future__ import annotations
 
 import doctest
-import importlib.util
 import json
 import os
 import random
-import sys
 from pathlib import Path
+
+from _util import load_script
 
 REPO = Path(__file__).resolve().parent.parent
 # Application order: the learned files, then the hand rules LAST (see 05_build_manual_rules.py).
 FILES = ("drug", "dictionary", "parhaf", "parrot", "acronyms", "manual")
 
 
-def _load(name: str, file: str):
-    spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / file)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod  # dataclasses look their module up there
-    spec.loader.exec_module(mod)
-    return mod
-
-
-build = _load("build_lookup", "08_build_lookup.py")
-apply = _load("apply_lookup", "apply_lookup.py")
+build = load_script("08_build_lookup.py", "build_lookup")
+apply = load_script("apply_lookup.py", "apply_lookup")
 b = build.b
 
 
@@ -106,7 +98,7 @@ def _edge_rules() -> list[dict]:
              ("pã", "pa"), ("ad", "AD"), ("ad hoc", "ad-hoc")]
     rules = [{"variant": v, "pattern": b.variant_pattern(v), "replacement": t} for v, t in pairs]
     b.guard_names(rules, {"mirat"})
-    merge = _load("merge", "03_merge_rules.py")
+    merge = load_script("03_merge_rules.py", "merge")
     # first alternative wins: "ana" listed before "ana na" in one merged rule
     merged = merge.merge_rules([{"variant": v, "pattern": b.variant_pattern(v), "replacement": "X"}
                                 for v in ("ana", "ana na", "anana")])

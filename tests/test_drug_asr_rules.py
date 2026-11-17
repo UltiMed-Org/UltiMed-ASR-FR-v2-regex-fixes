@@ -17,29 +17,23 @@ The ``01 --hyps-out`` test and 06's doctests need the UltiMed-ASR-FR-v1-scripts 
 This file was written by Claude Code.
 """
 import doctest
-import importlib.util
 from pathlib import Path
+
+from _util import load_script
 
 STAGE = Path(__file__).resolve().parent.parent / "scripts"
 
 
-def _load(name: str):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), STAGE / name)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
 def _has_scripts_dir(test: str) -> bool:
     """False (and says so) when the dataset scripts checkout ``test`` needs is missing."""
-    d = _load("01_extract_drug_errors.py").SCRIPTS_DIR
+    d = load_script("01_extract_drug_errors.py").SCRIPTS_DIR
     if not d.is_dir():
         print(f"{test}: SKIPPED, no UltiMed-ASR-FR-v1-scripts at {d} (set ULTIMED_SCRIPTS_DIR)")
     return d.is_dir()
 
 
 def _run_doctests(name: str) -> None:
-    mod = _load(name)
+    mod = load_script(name)
     failed, attempted = doctest.testmod(mod)
     assert attempted and not failed, (name, failed, attempted)
     print(f"{name}: OK ({attempted} cases)")
@@ -60,7 +54,7 @@ def test_extract_hyps_out() -> None:
 
     if not _has_scripts_dir("01 --hyps-out"):
         return
-    mod = _load("01_extract_drug_errors.py")
+    mod = load_script("01_extract_drug_errors.py")
     with tempfile.TemporaryDirectory() as d:
         d = Path(d)
         hyps = [{"audio": str(d / "drugs" / f"{n}.flac"), "hyp": f"hyp {n}"} for n in ("a", "b", "c")]
@@ -82,7 +76,7 @@ def test_collect_accent_target() -> None:
     ``périosté``, and the one ``périos`` hyp (label ``périoste``) must not become a rule to
     ``périosté``. Before the fix 01 compared the folded target with the folded key and
     dropped it."""
-    mod = _load("01_extract_drug_errors.py")
+    mod = load_script("01_extract_drug_errors.py")
     pairs = ([("lésion du périosté", "lésion du périosté")] * 18 + [("lésion du périoste", "lésion du périoste")] * 12
              + [("lésion du périoste", "lésion du périos")])
     report = mod.collect(pairs, {"perioste": None})
@@ -124,7 +118,7 @@ def test_convention_fixes_agree() -> None:
         return
     rows = [line.rstrip("\n").split("\t") for line in open(STAGE.parent / "inputs" / "convention_fixes.tsv", encoding="utf-8")
             if not line.startswith("#")]
-    clash = _load("06_build_convention_fixes.py").collisions(dict(rows))
+    clash = load_script("06_build_convention_fixes.py").collisions(dict(rows))
     assert not clash, clash
     print(f"convention_fixes.tsv agreement: OK ({len(rows)} rows)")
 
