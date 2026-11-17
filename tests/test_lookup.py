@@ -268,12 +268,33 @@ RESOLVED = [
     ("signe de lasec positif", "signe de Lasègue positif"), ("lasec", "lasec"),
     ("comprimés de déductiles", "comprimés d'Eductyl"), ("une neubopathie", "une neubopathie"),
     ("lésion du périos", "lésion du périoste"), ("traces de protéinur", "traces de protéinur"),
+    ("un prictest positif", "un prick test positif"),
+    # the block added 2026-11-17 for the 70/30 blend rules
+    ("le virus avalan", "le virus Avalon"), ("traité par avalan", "traité par Havlane"),
+    ("sous célesthène", "sous celestene"), ("un cerovar rare", "un sérovar rare"),
+    ("un chorynebacterium isolé", "un corynebacterium isolé"),
+    ("syndrome de dejent", "syndrome de Dejean"), ("Dejent", "Dejean"),
+    ("absence d'esténose", "absence de sténose"), ("une esténose serrée", "une resténose serrée"),
+    ("sous hémipénem", "sous imipenem"), ("sous zimipénème", "sous imipenem"),
+    ("devant l'lipoalbuminémie", "devant l'hypoalbuminémie"), ("taux d'lipoalbuminémie", "taux d'hypoalbuminémie"),
+    ("et lipoalbuminémie", "et l'hypoalbuminémie"),
+    ("des polypsessil", "des polypes sessiles"), ("de polypsessil", "de polypes sessiles"),
+    ("plusieurs polypsessil", "plusieurs polypes sessiles"),
+    ("une vingtaine de polypsessil", "une vingtaine de polypes sessiles"),
+    ("un polypsessil", "un polype sessile"),
+    ("au prictes", "au prick test"), ("le prictes", "le prick test"), ("un prictes", "un prick test"),
+    ("des prictes", "des prick tests"),
 ]
 
 
 def test_resolutions() -> None:
     """The hand decisions of conflict_resolutions.tsv, end to end on the committed files
-    (regex and lookup, learned files then manual), with concrete sentences."""
+    (regex and lookup, learned files then manual), with concrete sentences.
+
+    Three 2026-11-17 decisions are not covered because the tsv contexts (``*``,
+    ``after:WORDS``, ``before_vowel``) cannot express them: ``antibial`` (depends on the
+    NEXT word), ``étuximab`` (depends on the previous word's suffix) and ``glissonne``
+    (depends on a following number)."""
     fixes = [b.compile_rules(_rules(n)) for n in FILES]
     lks = [apply.Lookup.load(REPO / "lookup" / f"{n}_fix_rules.lookup.json") for n in FILES]
     bad = []
