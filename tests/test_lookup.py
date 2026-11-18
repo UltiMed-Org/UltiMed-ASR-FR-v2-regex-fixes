@@ -306,6 +306,8 @@ RESOLVED = [
     # the manual file is recased too (05 through 09's recase_to_labels)
     ("maladie de menière", "maladie de Ménière"), ("syndrome d'heřmansky-pudlak", "syndrome d'Hermansky-Pudlak"),
     ("un amino-acyl-trna", "un aminoacyl-tRNA"),
+    # FOLFOX keeps its capitals (the after: context words are written as the TSV spells them)
+    ("FOLFOX étuximab", "FOLFOX cetuximab"),
 ]
 
 
