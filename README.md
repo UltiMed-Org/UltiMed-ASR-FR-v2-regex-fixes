@@ -25,14 +25,14 @@ The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,
 
 ### Measured effect
 
-The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the corrected labels (2026-11-18), WER without rules and then with all six files applied in the order drug, dictionary, PARHAF, PARROT, acronyms, manual (rules at ee56d7a):
+The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the corrected labels (2026-11-18), WER without rules and then with all six files applied in the order drug, dictionary, PARHAF, PARROT, acronyms, manual (rules at 17594d3):
 
 | test split | words | no rules | v2 rules |
 |---|---|---|---|
 | drugs | 65,574 | 3.56 % | 2.16 % |
 | drug sentences | 3,537 | 3.68 % | 2.83 % |
 | dictionary | 239,173 | 2.42 % | 1.89 % |
-| PARHAF | 204,204 | 2.73 % | 2.41 % |
+| PARHAF | 204,210 | 2.74 % | 2.41 % |
 | PARROT | 95,035 | 3.40 % | 3.14 % |
 | acronyms | 3,435 | 2.85 % | 2.65 % |
 
