@@ -2,3 +2,17 @@
 # lodose: decided in conflict_resolutions.tsv (read first, so it wins over a line here).
 ceresta	Seresta
 lodoses	low-dose
+# 2026-11-18, owner: the surgical clip brand is Hem-o-lok in every spelling, plural Hem-o-loks. The
+# -lok forms come from the conventions (convention_fixes.tsv); these are the -lock / -loc respellings.
+hém-o-lock	Hem-o-lok
+hém-o-locks	Hem-o-loks
+hém-o-loc	Hem-o-lok
+hém-o-locs	Hem-o-loks
+hémo lock	Hem-o-lok
+hémo locks	Hem-o-loks
+hémo loc	Hem-o-lok
+hémo locs	Hem-o-loks
+hémolock	Hem-o-lok
+hémolocks	Hem-o-loks
+hémoloc	Hem-o-lok
+hémolocs	Hem-o-loks

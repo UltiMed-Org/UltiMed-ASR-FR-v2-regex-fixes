@@ -310,6 +310,11 @@ RESOLVED = [
     ("FOLFOX étuximab", "FOLFOX cetuximab"),
     # antépartum with the accent (owner, 2026-11-18), as the labels and the conventions write it
     ("hémorragie antepartum", "hémorragie antépartum"), ("une anté-partum", "une antépartum"),
+    # the clip brand is Hem-o-lok in every spelling, plural Hem-o-loks (owner, 2026-11-18)
+    ("un hem-o-lock vert", "un Hem-o-lok vert"), ("deux clips Hémolocs", "deux clips Hem-o-loks"),
+    ("trois hémo lock violets", "trois Hem-o-lok violets"), ("mise en place de hemoloK.", "mise en place de Hem-o-lok."),
+    ("pose d'hémolocks", "pose d'Hem-o-loks"), ("un Hem-O-Lock", "un Hem-o-lok"), ("un hémolok", "un Hem-o-lok"),
+    ("un Hem-o-lok", "un Hem-o-lok"), ("une hémolyse", "une hémolyse"),
 ]
 
 
