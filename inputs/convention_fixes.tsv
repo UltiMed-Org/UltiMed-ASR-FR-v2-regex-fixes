@@ -53,6 +53,7 @@ ano-rectale	anorectale
 ano-rectaux	anorectaux
 antebrachial	antébrachial
 antebrachiale	antébrachiale
+antepartum	antépartum
 anti agrégation	antiagrégation
 anti diabétique	antidiabétique
 anti fibrosant	antifibrosant
@@ -144,7 +145,6 @@ antiepileptique	antiépileptique
 antro-choanal	antrochoanal
 antro-pylorique	antropylorique
 anté-partum	antépartum
-antepartum	antépartum
 antéro basal	antérobasal
 antéro latéral	antérolatéral
 antéro latérale	antérolatérale
@@ -215,6 +215,9 @@ barety	baréty
 baso-cellulaire	basocellulaire
 baso-latéral	basolatéral
 beriberi	béribéri
+beta hcg	bêta-hCG
+beta-hcg	bêta-hCG
+betahcg	bêta-hCG
 bevitine	bévitine
 bi anti agrégation	bi antiagrégation
 bi-acromial	biacromial
@@ -274,13 +277,18 @@ bulbo-médullaire	bulbomédullaire
 bulévirtide	bulevirtide
 bálint	balint
 bélimumab	belimumab
+béta hcg	bêta-hCG
+béta-hcg	bêta-hCG
+bétahcg	bêta-hCG
 bévacizumab	bevacizumab
 bêta adrénergique	bêta-adrénergique
 bêta globulines	bêta-globulines
+bêta hcg	bêta-hCG
 bêta mimétique	bêta-mimétique
 bêta mimétiques	bêta-mimétiques
 bêta-hydroxy-deshydrogénase	bêta-hydroxy-déshydrogénase
 bêta-hydroxystéroide	bêta-hydroxystéroïde
+bêtahcg	bêta-hCG
 calcaneus	calcanéus
 calloso-marginale	callosomarginale
 candésartan	candesartan
@@ -515,7 +523,7 @@ désonide	desonide
 désquamation	desquamation
 détémir	detemir
 déxaméthasone	dexamethasone
-echoendoscopie	échoendoscopie
+echoendoscopie	écho-endoscopie
 echographie	échographie
 eicosapentaènoïque	éicosapentaénoïque
 eicosapentaénoïque	éicosapentaénoïque
@@ -705,6 +713,7 @@ hypothenar	hypothénar
 hébra	hebra
 hégar	hegar
 hém-o-lock	hem-o-lock
+hém-o-lok	hem-o-lok
 hémabridge	hemabridge
 hémangio-péricytome	hémangiopéricytome
 hématopoïètique	hématopoïétique
@@ -1072,6 +1081,8 @@ menétrier	ménétrier
 meso	méso
 mesusage	mésusage
 metapneumovirus	métapneumovirus
+meti-r	méti-R
+meti-s	méti-S
 mexilétine	mexiletine
 miansérine	mianserine
 micro-abcès	microabcès
@@ -1808,7 +1819,14 @@ sacro-coxalgie	sacrocoxalgie
 sacro-lombaire	sacrolombaire
 sacro-recto-génito-pubienne	sacrorectogénitopubienne
 sacro-sciatique	sacrosciatique
-sars cov	sars-cov
+sars cov	SARS-CoV
+sars cov 1	SARS-CoV-1
+sars cov 2	SARS-CoV-2
+sars cov1	SARS-CoV-1
+sars cov2	SARS-CoV-2
+sars-cov 2	SARS-CoV-2
+sars-cov1	SARS-CoV-1
+sars-cov2	SARS-CoV-2
 scanno-guidée	scannoguidée
 scapho-lunaire	scapholunaire
 scaphocephalie	scaphocéphalie
@@ -1829,6 +1847,7 @@ sigmoidectomie	sigmoïdectomie
 sino-carotidien	sinocarotidien
 sino-carotidienne	sinocarotidienne
 sinusoidal	sinusoïdal
+sjogren	sjögren
 socio-professionnelle	socioprofessionnelle
 spatio-temporelle	spatiotemporelle
 specialfoldine	spécialfoldine
@@ -2004,6 +2023,7 @@ téléscopique	télescopique
 témocilline	temocilline
 ténectomie	tenectomie
 ténectéplase	tenecteplase
+téralithe	teralithe
 tériparatide	teriparatide
 térumo	terumo
 tézépélumab	tezepelumab
@@ -2087,6 +2107,8 @@ vésico-vaginale	vésicovaginale
 vésiculo-pustuleuse	vésiculopustuleuse
 wirsüng	wirsung
 xanthelasma	xanthélasma
+écho endoscopie	écho-endoscopie
+échoendoscopie	écho-endoscopie
 éconazole	econazole
 éculizumab	eculizumab
 éflornithine	eflornithine
