@@ -21,23 +21,24 @@ These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against t
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
-The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,116 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
+The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,192 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) TODO: decide and measure the order of the four term files, or merge them into one checked list as v1 did.
 
 ### Measured effect
 
-The v2 model's hypotheses on each subset's test split, each subset scored with its own rule file (WER without rules, then with rules, then clips better / worse):
+The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the corrected labels (2026-11-18), WER without rules and then with all six files applied in the order drug, dictionary, PARHAF, PARROT, acronyms, manual (rules at ee56d7a):
 
-| test split | no rules | v2 rules |
-|---|---|---|
-| drugs (2,059 clips) | 3.14 % | 1.77 % (767 / 0) |
-| dictionary (49,891) | 2.39 % | 1.89 % (8,693 / 3) |
-| PARHAF (5,489) | 2.76 % | 2.47 % (894 / 0) |
-| PARROT (1,548) | 3.68 % | 3.37 % (190 / 0) |
-| acronyms (151) | 2.90 % | 2.72 % (5 / 0) |
+| test split | words | no rules | v2 rules |
+|---|---|---|---|
+| drugs | 65,574 | 3.56 % | 2.16 % |
+| drug sentences | 3,537 | 3.68 % | 2.83 % |
+| dictionary | 239,173 | 2.42 % | 1.89 % |
+| PARHAF | 204,204 | 2.73 % | 2.41 % |
+| PARROT | 95,035 | 3.40 % | 3.14 % |
+| acronyms | 3,435 | 2.85 % | 2.65 % |
 
-These rules are learned on ALL splits, test included, on purpose: the list is meant to fix every mistake the model made on the dataset. So these numbers show how many seen mistakes the rules fix, not how well they generalize. A build that held the test split out gives 2.37 % on drugs, 2.04 % on dictionary and 2.58 % on PARHAF.
+**These with-rules numbers are optimistic.** The committed rules are learned on ALL splits, test included, on purpose: the list is meant to fix every mistake the model made on the dataset. So the table shows how many seen mistakes the rules fix, not how well they generalize. A control build learned on train+val only keeps 72 % of the gain on dictionary, 62 % on PARHAF, 61 % on drugs and 20 % on acronyms. The PARROT rules are learned on its test split only (PARROT has no other split), so its gain is entirely in-sample.
 
-Overcorrection, per file (drugs, dictionary, PARHAF and acronyms; TODO for PARROT): on the v2 labels these files rewrite 0 lines; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 10, PARHAF 2, drugs 1, acronyms 0; on 1,662 French VoxPopuli references, 0. TODO: overcorrection and WER of all files applied together, in the final order.
+Overcorrection, per file (drugs, dictionary, PARHAF and acronyms; TODO for PARROT): on the v2 labels these files rewrite 0 lines; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 10, PARHAF 2, drugs 1, acronyms 0; on 1,662 French VoxPopuli references, 0. TODO: overcorrection of all files applied together, in the final order (their WER is in the table above).
 
 TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author's own recordings existed when the rules were built, so their effect on real speech with the v2 model is not measured yet.
 
@@ -108,16 +109,16 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 1,997 | 2,069 | 0 | 785,566 | 117,846 |
-| `drug_fix_rules` | 2,424 | 4,989 | 20 | 1,139,317 | 150,299 |
-| `dictionary_fix_rules` | 18,273 | 43,577 | 396 | 10,083,777 | 1,376,860 |
-| `parhaf_fix_rules` | 2,170 | 4,124 | 35 | 1,074,517 | 136,241 |
+| `manual_fix_rules` | 2,005 | 2,081 | 0 | 788,603 | 118,261 |
+| `drug_fix_rules` | 2,424 | 4,989 | 20 | 1,139,316 | 150,298 |
+| `dictionary_fix_rules` | 18,273 | 43,577 | 396 | 10,083,778 | 1,376,861 |
+| `parhaf_fix_rules` | 2,170 | 4,124 | 35 | 1,074,519 | 136,243 |
 | `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,627 |
 | `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,420 |
 
 ### How the lookups are built
 
-`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,025 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,032 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 
