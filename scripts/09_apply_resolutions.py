@@ -257,6 +257,17 @@ def replacement_words(rules: list[dict]) -> set[str]:
     """The lowercased words of every replacement, what ``label_casing`` needs to look at."""
     return {w.lower() for r in rules for w in _WORD_RE.findall(r["replacement"])}
 
+
+def recase_to_labels(rules: list[dict], texts: list[str]) -> None:
+    """Both recasing passes, in place: every word to ``label_casing``, then every multi-word
+    replacement to ``label_phrase_casing``. Also used by 05 on the manual file, whose
+    replacements come from hand-written TSVs and the lowercase label audit."""
+    changed = recase(rules, label_casing(texts, replacement_words(rules)))
+    logger.info(f"{len(changed)} replacements recased to the labels' casing: {sorted(set(changed))[:20]}")
+    changed = recase_phrases(rules, label_phrase_casing(texts, {r["replacement"].lower() for r in rules}))
+    logger.info(f"{len(changed)} replacements recased to the labels' whole-phrase casing: {sorted(set(changed))[:20]}")
+
+
 @click.command()
 @click.argument("src", type=click.Path(exists=True, path_type=Path))
 @click.argument("dst", type=click.Path(path_type=Path))
@@ -276,10 +287,7 @@ def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_c
         logger.info(f"{len(changed)} replacements respelled by the label conventions: {sorted(set(changed))[:20]}")
         logger.info(f"{len(refused)} respellings refused, the labels do not back them: {refused[:20]}")
     if texts is not None and not no_recase:
-        changed = recase(rules, label_casing(texts, replacement_words(rules)))
-        logger.info(f"{len(changed)} replacements recased to the labels' casing: {sorted(set(changed))[:20]}")
-        changed = recase_phrases(rules, label_phrase_casing(texts, {r["replacement"].lower() for r in rules}))
-        logger.info(f"{len(changed)} replacements recased to the labels' whole-phrase casing: {sorted(set(changed))[:20]}")
+        recase_to_labels(rules, texts)
     dst.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rules), encoding="utf-8")
     logger.info(f"wrote {dst}")
 
