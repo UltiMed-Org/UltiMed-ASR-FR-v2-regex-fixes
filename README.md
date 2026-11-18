@@ -10,14 +10,14 @@ License: AGPL-3.0-or-later for everything in this repository (rules, lookup tabl
 
 ## The rules
 
-These are the **v2** rules, built on 2026-11-17 from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
+These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against the corrected labels, see [scripts/README.md](scripts/README.md)) from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
 | `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,069 | 1,998 |
-| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,986 | 2,424 |
-| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,577 | 18,274 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,128 | 2,171 |
+| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,989 | 2,424 |
+| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,577 | 18,273 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,124 | 2,170 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
@@ -109,15 +109,15 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
 | `manual_fix_rules` | 1,998 | 2,069 | 0 | 785,841 | 117,880 |
-| `drug_fix_rules` | 2,424 | 4,986 | 20 | 1,139,208 | 150,257 |
-| `dictionary_fix_rules` | 18,274 | 43,577 | 396 | 10,084,148 | 1,376,900 |
-| `parhaf_fix_rules` | 2,171 | 4,128 | 35 | 1,075,014 | 136,318 |
+| `drug_fix_rules` | 2,424 | 4,989 | 20 | 1,139,317 | 150,299 |
+| `dictionary_fix_rules` | 18,273 | 43,577 | 396 | 10,083,777 | 1,376,860 |
+| `parhaf_fix_rules` | 2,170 | 4,124 | 35 | 1,074,517 | 136,241 |
 | `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,627 |
 | `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,420 |
 
 ### How the lookups are built
 
-`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,027 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,025 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 
