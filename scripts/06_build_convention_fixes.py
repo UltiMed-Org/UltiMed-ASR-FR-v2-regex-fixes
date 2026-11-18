@@ -68,6 +68,13 @@ def convention_fixes(forms: list[str]) -> dict[str, str]:
     {'post-opératoire': 'postopératoire', 'post opératoire': 'postopératoire'}
     >>> convention_fixes(["bassin et", "bassinet"]), convention_fixes(["déborde", "deborde", "débordé"])
     ({}, {})
+
+    A lowercase form lowercases the canonical's first letter (the conventions capitalise a
+    lone word as a sentence start), except when its second letter is a capital too: an
+    acronym keeps its case (``sARS-CoV`` until 2026-11-18).
+
+    >>> convention_fixes(["sars cov", "sars-cov"])
+    {'sars cov': 'SARS-CoV'}
     """
     out, kept = {}, set()
     for f in forms:
@@ -75,7 +82,8 @@ def convention_fixes(forms: list[str]) -> dict[str, str]:
         if canon.lower() == f.lower():
             kept.add(f.lower())
         elif _letters(canon) == _letters(f):
-            out[f] = canon[0].lower() + canon[1:] if f[0].islower() else canon
+            lower_first = f[0].islower() and not canon[1:2].isupper()
+            out[f] = canon[0].lower() + canon[1:] if lower_first else canon
     canons = {v.lower() for v in out.values()}
     return out if out and kept <= canons else {}
 
