@@ -308,6 +308,8 @@ RESOLVED = [
     ("un amino-acyl-trna", "un aminoacyl-tRNA"),
     # FOLFOX keeps its capitals (the after: context words are written as the TSV spells them)
     ("FOLFOX étuximab", "FOLFOX cetuximab"),
+    # antépartum with the accent (owner, 2026-11-18), as the labels and the conventions write it
+    ("hémorragie antepartum", "hémorragie antépartum"), ("une anté-partum", "une antépartum"),
 ]
 
 
