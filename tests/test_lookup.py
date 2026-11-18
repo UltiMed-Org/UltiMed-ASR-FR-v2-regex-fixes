@@ -264,7 +264,7 @@ RESOLVED = [
     # the block added 2026-11-17 for the 70/30 blend rules
     ("le virus avalan", "le virus Avalon"), ("traité par avalan", "traité par Havlane"),
     ("sous célesthène", "sous celestene"), ("un cerovar rare", "un sérovar rare"),
-    ("un chorynebacterium isolé", "un corynebacterium isolé"),
+    ("un chorynebacterium isolé", "un Corynebacterium isolé"),
     ("syndrome de dejent", "syndrome de Dejean"), ("Dejent", "Dejean"),
     ("absence d'esténose", "absence de sténose"), ("une esténose serrée", "une resténose serrée"),
     ("sous hémipénem", "sous imipenem"), ("sous zimipénème", "sous imipenem"),
@@ -303,6 +303,9 @@ RESOLVED = [
     # and the whole phrase's casing when the per-word step leaves it half done (marie, epi, luc also appear lowercase)
     ("maladie de charcot-mary-tooth", "maladie de Charcot-Marie-Tooth"), ("le ckdpi", "le CKD-EPI"),
     ("un abord de caldwell-luk", "un abord de Caldwell-Luc"),
+    # the manual file is recased too (05 through 09's recase_to_labels)
+    ("maladie de menière", "maladie de Ménière"), ("syndrome d'heřmansky-pudlak", "syndrome d'Hermansky-Pudlak"),
+    ("un amino-acyl-trna", "un aminoacyl-tRNA"),
 ]
 
 

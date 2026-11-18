@@ -23,11 +23,17 @@ respell what a learned rule wrote. It used to go first so that a hand fix would 
 are now taken out of the learned files instead (``09_apply_resolutions.py``), so order no
 longer decides them.
 
+The replacements are then recased to the labels' casing by 09's ``recase_to_labels``
+(the same two passes as for the learned files: per word, then whole phrase), since the
+convention rows come from a lowercase label audit and would otherwise write ``ménière``
+where the labels write ``Ménière``. The labels default to 02's ``DEFAULT_LABELS`` (the
+UltiMed-ASR-FR-v1-scripts manifests); ``--labels`` replaces them, ``--no-recase`` skips this.
+
 It also refreshes the lookup-table form (``lookup/manual_fix_rules.lookup.json`` by
 default, see ``08_build_lookup.py``), since a hand edit of a TSV is the one change made
 outside a full build and the lookup must follow it. ``--no-lookup`` skips that.
 
-Usage: uv run scripts/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl] [--lookup-out OUT.lookup.json]
+Usage: uv run scripts/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl] [--lookup-out OUT.lookup.json] [--labels MANIFEST ...] [--no-recase]
 This file was written by Claude Code.
 """
 import importlib.util
@@ -135,9 +141,22 @@ def build_manual_rules(lines) -> list[dict]:
               help="lookup file to refresh; default lookup/<OUT stem>.lookup.json for the default OUT, "
                    "else OUT with a .lookup.json suffix")
 @click.option("--no-lookup", is_flag=True, help="do not write the lookup form")
-def main(tsvs: tuple[Path, ...], out: Path, lookup_out: Path | None, no_lookup: bool) -> None:
+@click.option("--labels", multiple=True, type=click.Path(path_type=Path),
+              help="NeMo manifests (text field) whose casing the replacements take; default 02's DEFAULT_LABELS")
+@click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing")
+def main(tsvs: tuple[Path, ...], out: Path, lookup_out: Path | None, no_lookup: bool,
+         labels: tuple[Path, ...], no_recase: bool) -> None:
     tsvs = tsvs or DEFAULT_TSVS
     rules = build_manual_rules([line for tsv in tsvs for line in tsv.read_text(encoding="utf-8").splitlines()])
+    if not no_recase:
+        labels = labels or b.DEFAULT_LABELS
+        if missing := [str(mf) for mf in labels if not mf.exists()]:
+            raise click.UsageError(f"label manifests not found: {missing} (set ULTIMED_SCRIPTS_DIR, --labels or --no-recase)")
+        # Loaded here, not at import: 09 imports this module.
+        _rspec = importlib.util.spec_from_file_location("ar", _HERE / "09_apply_resolutions.py")
+        ar = importlib.util.module_from_spec(_rspec)
+        _rspec.loader.exec_module(ar)
+        ar.recase_to_labels(rules, [json.loads(line)["text"] for mf in labels for line in open(mf, encoding="utf-8")])
     with out.open("w", encoding="utf-8") as f:
         f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rules)
     logger.info(f"{', '.join(t.name for t in tsvs)} -> {out}: {len(rules)} rules")
