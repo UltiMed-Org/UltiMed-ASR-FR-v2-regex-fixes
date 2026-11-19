@@ -278,6 +278,37 @@ def merge_reports(reports) -> dict:
     return out
 
 
+def group_variants(report: dict) -> tuple[dict, dict, dict, dict]:
+    """Regroup a 01 report by folded variant (``_key``), the unit every rule decision is made on.
+
+    Returns four dicts keyed by the folded variant: ``by_key`` (target -> error count),
+    ``spelling`` (raw variant spelling -> count; the displayed variant is the most frequent),
+    ``drug_of`` (target -> the report entry it came from) and ``clips`` (target -> distinct
+    clips, see ``merge_reports``). One folded variant may stand for several targets: that is
+    what the ``ambiguous`` reason of ``build_rules`` measures, and what
+    ``10_build_confusion_groups.py`` exports instead of dropping.
+
+    >>> report = {"cétuximab": {"errors": {"etuximab": 3, "étuximab": 1}, "targets": {}},
+    ...           "rituximab": {"errors": {"etuximab": 2}, "targets": {}}}
+    >>> by_key, spelling, drug_of, clips = group_variants(report)
+    >>> by_key[("etuximab",)], spelling[("etuximab",)].most_common(1)
+    (Counter({'cétuximab': 4, 'rituximab': 2}), [('etuximab', 5)])
+    """
+    by_key: dict[tuple, Counter] = defaultdict(Counter)
+    spelling: dict[tuple, Counter] = defaultdict(Counter)
+    drug_of: dict[tuple, dict[str, str]] = defaultdict(dict)
+    clips: dict[tuple, Counter] = defaultdict(Counter)
+    for drug, entry in report.items():
+        for variant, n in entry["errors"].items():
+            k = _key(variant)
+            target = entry.get("targets", {}).get(variant, drug)
+            by_key[k][target] += n
+            spelling[k][variant] += n
+            drug_of[k][target] = drug
+            clips[k][target] += entry.get("clips", {}).get(variant, n)
+    return by_key, spelling, drug_of, clips
+
+
 def build_rules(report: dict, hyps: list[str], labels, lex: dict,
                 min_len: int = 5, min_count: int = 1, min_share: float = 0.9,
                 min_precision: float = 0.8, min_ratio: float = 0.5,
@@ -341,18 +372,7 @@ def build_rules(report: dict, hyps: list[str], labels, lex: dict,
     'real_text'
     """
     # Folded variant -> {target: count}; the displayed variant is its most frequent spelling.
-    by_key: dict[tuple, Counter] = defaultdict(Counter)
-    spelling: dict[tuple, Counter] = defaultdict(Counter)
-    drug_of: dict[tuple, dict[str, str]] = defaultdict(dict)
-    clips: dict[tuple, Counter] = defaultdict(Counter)
-    for drug, entry in report.items():
-        for variant, n in entry["errors"].items():
-            k = _key(variant)
-            target = entry.get("targets", {}).get(variant, drug)
-            by_key[k][target] += n
-            spelling[k][variant] += n
-            drug_of[k][target] = drug
-            clips[k][target] += entry.get("clips", {}).get(variant, n)
+    by_key, spelling, drug_of, clips = group_variants(report)
     # Single words too: a variant made only of words the labels use is ordinary French
     # ("lait unique" -> Levunique) and needs --min-count-words sightings.
     # And a variant minus its trailing lone "à": "patelle à" -> patella is blocked by "patelle".

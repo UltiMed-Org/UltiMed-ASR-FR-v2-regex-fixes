@@ -7,11 +7,12 @@
 drug spotting, the character-level mapping inside a multi-word replace, glued elisions)
 and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply_rules),
 03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py,
-06_build_convention_fixes.py and 09_apply_resolutions.py.
+06_build_convention_fixes.py and 09_apply_resolutions.py, plus 10_build_confusion_groups.py
+(doctests and a run on a tiny synthetic build folder).
 
     uv run tests/test_drug_asr_rules.py
 
-The ``01 --hyps-out`` test and 06's doctests need the UltiMed-ASR-FR-v1-scripts checkout
+The ``01 --hyps-out`` and confusion-group CLI tests and 06's doctests need the UltiMed-ASR-FR-v1-scripts checkout
 (drug lexicon, ``label_conventions``; see 01's ``SCRIPTS_DIR``) and are skipped without it.
 
 This file was written by Claude Code.
@@ -123,6 +124,73 @@ def test_convention_fixes_agree() -> None:
     print(f"convention_fixes.tsv agreement: OK ({len(rows)} rows)")
 
 
+def test_build_confusion_groups() -> None:
+    _run_doctests("10_build_confusion_groups.py")
+
+
+def test_confusion_groups_cli() -> None:
+    """10 on a synthetic build: ``florbamab`` was heard for ``zorbamab`` (3 clips, one in
+    the test split) and ``quorbamab`` (2), and once where the label had no lexicon word, so
+    it is one group with two candidates, ``heard_correct_count`` 1, and the committed-style
+    rule ``florbamab -> zorbamab`` as fallback. ``blimid`` has a single target and is no
+    group. The examples carry the split, and an examples path inside the repo is refused."""
+    import json
+    import tempfile
+
+    from click.testing import CliRunner
+
+    if not _has_scripts_dir("10 confusion groups"):
+        return
+    mod = load_script("10_build_confusion_groups.py")
+    b = mod.b
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        build, man = d / "drugs", d / "man" / "drugs"
+        build.mkdir()
+        man.mkdir(parents=True)
+        clips = {  # clip: (label, hyp, split)
+            "a": ("prendre zorbamab le soir", "prendre florbamab le soir", "train"),
+            "b": ("prendre zorbamab le soir", "prendre florbamab le soir", "val"),
+            "c": ("arrêt du zorbamab hier", "arrêt du florbamab hier", "test"),
+            "d": ("avec quorbamab ce matin", "avec florbamab ce matin", "train"),
+            "e": ("avec quorbamab ce matin", "avec florbamab ce matin", "train"),
+            "f": ("un florbamab sans faute", "un florbamab sans faute", "train"),
+            "g": ("sous blimide", "sous blimid", "train"),
+        }
+        report = {"zorbamab": {"n_seen": 3, "n_correct": 0, "n_deleted": 0, "errors": {"florbamab": 3}, "targets": {}},
+                  "quorbamab": {"n_seen": 2, "n_correct": 0, "n_deleted": 0, "errors": {"florbamab": 2}, "targets": {}},
+                  "blimide": {"n_seen": 1, "n_correct": 0, "n_deleted": 0, "errors": {"blimid": 1}, "targets": {}}}
+        (build / "errors.json").write_text(json.dumps(report))
+        (build / "hyps.jsonl").write_text("".join(json.dumps({"audio": str(man / f"{c}.flac"), "hyp": h}) + "\n"
+                                                  for c, (_, h, _) in clips.items()))
+        for split in ("train", "val", "test"):
+            (man / f"{split}.jsonl").write_text("".join(json.dumps({"audio_filepath": f"{c}.flac", "text": t}) + "\n"
+                                                        for c, (t, _, s) in clips.items() if s == split))
+        rules = [{"variant": "florbamab", "pattern": b.variant_pattern("florbamab"), "replacement": "zorbamab"}]
+        (d / "rules.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rules))
+        args = [str(build), "--out", str(d / "groups.jsonl"), "--rules", str(d / "rules.jsonl"), "--no-respell",
+                "--manifests-dir", str(d / "man")]
+        res = CliRunner().invoke(mod.main, args + ["--examples-out", str(d / "ex.jsonl")])
+        assert res.exit_code == 0, res.output
+        groups = [json.loads(line) for line in (d / "groups.jsonl").open()]
+        assert groups == [{"heard": "florbamab",
+                           "candidates": [{"text": "zorbamab", "count": 3}, {"text": "quorbamab", "count": 2}],
+                           "heard_correct_count": 1, "kind": "term", "sources": ["drugs"],
+                           "regex_fallback": "zorbamab"}], groups
+        ex = [json.loads(line) for line in (d / "ex.jsonl").open()]
+        assert sorted((e["ref_target"], e["clip"], e["split"]) for e in ex) == [
+            ("quorbamab", "drugs/d.flac", "train"), ("quorbamab", "drugs/e.flac", "train"),
+            ("zorbamab", "drugs/a.flac", "train"), ("zorbamab", "drugs/b.flac", "val"),
+            ("zorbamab", "drugs/c.flac", "test")], ex
+        assert all(e["heard"] == "florbamab" for e in ex), ex
+        res = CliRunner().invoke(mod.main, args + ["--min-total", "6"])
+        assert res.exit_code == 0 and not (d / "groups.jsonl").read_text(), res.output
+        res = CliRunner().invoke(mod.main, args + ["--examples-out", str(mod.REPO / "ex.jsonl")])
+        assert res.exit_code != 0 and "inside the repo" in res.output, res.output
+        assert not (mod.REPO / "ex.jsonl").exists()
+    print("10 confusion groups CLI: OK")
+
+
 if __name__ == "__main__":
     test_extract_drug_errors()
     test_extract_hyps_out()
@@ -134,3 +202,5 @@ if __name__ == "__main__":
     test_apply_resolutions()
     test_build_convention_fixes()
     test_convention_fixes_agree()
+    test_build_confusion_groups()
+    test_confusion_groups_cli()
