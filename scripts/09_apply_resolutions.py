@@ -56,9 +56,9 @@ def _load(name: str, file: str):
     return mod
 
 
-b = _load("b", "02_build_fix_rules.py")
 u = _load("u", "04_drop_unk_variants.py")
 mr = _load("mr", "05_build_manual_rules.py")
+b = u.b  # 04 already loads 02, no third copy of it here
 
 
 def resolved_patterns(lines) -> set[str]:
