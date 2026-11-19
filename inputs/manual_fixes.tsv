@@ -16,3 +16,12 @@ hémolock	Hem-o-lok
 hémolocks	Hem-o-loks
 hémoloc	Hem-o-lok
 hémolocs	Hem-o-loks
+# 2026-11-19, owner: Rio Branco, also when the model glues it and hyphenates the next word (riobrancho-dilatés).
+riobrancho	Rio Branco
+rio brancho	Rio Branco
+rio branco	Rio Branco
+# The end bound refuses a hyphen after a match, so the glued-and-hyphenated forms are spelled out (ending kept as heard).
+riobrancho-dilaté	Rio Branco dilaté
+riobrancho-dilatée	Rio Branco dilatée
+riobrancho-dilatés	Rio Branco dilatés
+riobrancho-dilatées	Rio Branco dilatées

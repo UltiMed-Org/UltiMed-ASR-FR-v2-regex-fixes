@@ -165,3 +165,7 @@ glison	before:10	Gleason
 glison	after:le	Gleason
 glison	after:un	Gleason
 glison	*	
+# 2026-11-19, owner: the Rio Branco eponym (artère gastrique postérieure ascendante de Rio Branco) always takes
+# both capitals, and intéral / interal is the masculine entéral in every file (dictionary said entérale).
+riobranchodilatée	*	Rio Branco dilatée
+interal	*	entéral
