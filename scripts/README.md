@@ -256,6 +256,34 @@ uv run scripts/09_apply_resolutions.py rules/drug_fix_rules.jsonl rules/drug_fix
 uv run scripts/05_build_manual_rules.py
 ```
 
+## Confusion groups (`10_build_confusion_groups.py`, 2026-11-19)
+
+A regex maps one heard form to one replacement, so 02 drops every variant whose errors split between targets (`ambiguous`) or that the model also writes when it is right (`imprecise`). Those are the cases an acoustic second pass could decide from the audio: `étuximab` was `cetuximab` in two clips and `rituximab` in two others. `10_build_confusion_groups.py` exports them instead of losing them: every folded heard form (02's `_key`) with at least two observed targets, summed over the build folders it is given, one group per line in `rules/confusion_groups.jsonl`:
+
+```json
+{"heard": "étuximab", "candidates": [{"text": "cetuximab", "count": 2}, {"text": "rituximab", "count": 2}], "heard_correct_count": 0, "kind": "drug", "sources": ["PARHAF", "dictionary", "drugs"], "regex_fallback": null}
+```
+
+- `heard` is the variant as 01 writes it (lowercase, punctuation dropped), the most frequent spelling of the folded form; match it case- and accent-insensitively, as the rule patterns do.
+- `candidates` are the targets with their error counts, descending; accent or case siblings are one candidate (01 does not count such a slip as an error). Their spelling is the final label spelling: each goes through 09's `apply_conventions` and `recase_to_labels` like a learned replacement.
+- `heard_correct_count` is 02's precision denominator (`count_ngrams` over the hypotheses) minus the error count: how often the model wrote the form where the label had no lexicon word to fix. It is what makes the top of the list (inflections such as `abdominale` for `abdominales`, 630 errors against 8,191 correct uses) a poor target for any rewrite.
+- `kind` is `drug` when every candidate comes from a drug-lexicon word rarer in French than 01's `MAX_TERM_ZIPF` (the Zipf test keeps out the everyday words of brand presentations, such as `enfants`), else `term`.
+- `sources` are the contributing build folders (subset names); `regex_fallback` is what the committed rule files, applied in README order, make of the bare heard form today, or null. Context rules (`after:`, `before_vowel`) cannot fire on a bare form, so `étuximab` (decided `after:FOLFOX` in `inputs/conflict_resolutions.tsv`) shows null.
+
+The committed file holds counts and strings only, no transcript and no clip id. `--examples-out PATH` additionally writes example rows `{"heard", "ref_target", "hyp", "ref", "clip", "split"}` (up to `--examples-per-candidate`, default 5, per candidate and split), and refuses a path inside the repo. They are recovered by re-running 01's `drug_outcomes` on the hypotheses holding a heard form, with the manifests giving label and split, so the test split's rows can serve as a held-out benchmark for groups mined from a train+val build. `--min-candidate-count` (default 1) filters candidates, `--min-total` (default 3) groups.
+
+**The heard forms belong to one model**: they are what that model's hypotheses contain, so regenerate the file for every new model (and every relabelling).
+
+The committed file (2026-11-19) comes from the five `A_fixedlabels` builds, the ones the committed rule files were rebuilt from (all splits, corrected labels, blend70 hypotheses): 939 groups out of 1,281 forms with 2+ targets, 931 `term` and 8 `drug`, 63 with a non-null `regex_fallback`. The examples run wrote 8,652 rows (train 5,629, val 1,457, test 1,566). About 7.5 minutes on CPU.
+
+```bash
+A=.../regex_v2_ignore_backups/A_fixedlabels
+uv run scripts/10_build_confusion_groups.py $A/drugs $A/dictionary $A/PARHAF $A/PARROT $A/acronyms \
+    --examples-out /somewhere/outside/the/repo/confusion_examples.jsonl
+```
+
+Pass builds of disjoint clips: folder counts are added. 02's variant regrouping was extracted into `group_variants` so 10 imports it rather than copying it. Written with Claude Code.
+
 ## French news guard on the term rules (2026-10-08)
 
 The term rules rewrote 94 of the 100k held-out French news sentences (2023). The committed `term_fix_rules.jsonl` is now cleaned by `04_drop_unk_variants.py --guard` with Leipzig's `fr-news-2024-1M.txt` (minus the 171 sentences it shares with the held-out 2023 file): a variant found in that news is dropped, 35,996 -> 35,876 rules. Effect, measured by the ultra repo's `evalrules.py` (`local/run_logs/term-newsguard-20261008/`): held-out news rewrites 94 -> 24, French Wikipedia 3 -> 1, still 0 of 602,813 labels, and the fixes on UltiMed's dictionary test lose about 0.5 % (UltiMed 10,621 -> 10,563 fixed words, WER 2.13 % unchanged; redux 9.25 -> 9.26 %). Done with Claude Code.

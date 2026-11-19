@@ -21,6 +21,8 @@ These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against t
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
+`rules/confusion_groups.jsonl` is not a rule file: it lists the 939 heard forms the v2 model writes for two or more different words (`étuximab` for `cetuximab` or `rituximab`), which no regex can fix, with the candidates and their counts, for an acoustic second pass. No transcript or clip id is in it. It is tied to the model that produced the hypotheses and must be regenerated for each new model; see `scripts/10_build_confusion_groups.py` and [scripts/README.md](scripts/README.md). Script and docs written with Claude Code.
+
 The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,192 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) The order used for every with-rules number published for v2 (the benchmark tables and the real-voice page of the model repository) is: drugs, dictionary, PARHAF, PARROT, acronyms, then manual. Since no variant gets two replacements any more, the order of the term files only matters for chained rewrites between them; other orders were not measured. TODO: merge them into one checked list as v1 did.
 
 ### Measured effect
@@ -46,12 +48,12 @@ TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author
 
 | path | content |
 |---|---|
-| `rules/` | the six v2 rule files (regex form) |
+| `rules/` | the six v2 rule files (regex form), and `confusion_groups.jsonl` (ambiguous heard forms, not rules) |
 | `lookup/` | the same six files in lookup-table form, generated from `rules/` by `scripts/08_build_lookup.py` |
 | `rejected/` | the candidates each v2 build rejected, with the reason, and `drug_asr_errors.json` (the misspellings the drug build started from); not published: they hold fragments of dataset transcripts and nothing reads them, so they stay local and gitignored |
 | `inputs/` | the author's `conflict_resolutions.tsv` (variants the learned files disagreed on), the hand-written `manual_fixes.tsv` and the generated `convention_fixes.tsv`, source of `manual_fix_rules.jsonl` |
 | `v1/` | the v1 outputs, kept for comparison: `drug_fix_rules.jsonl`, `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list) and the per-model `drug_asr_errors*.json` (their rejected lists stay local, like `rejected/`) |
-| `scripts/` | the build chain (01 to 07 and 09, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
+| `scripts/` | the build chain (01 to 07 and 09, plus 10 for the confusion groups, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
 | `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
 
 The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts) checkout. By default they look for it next to this repository; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
