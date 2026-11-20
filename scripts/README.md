@@ -294,6 +294,14 @@ The committed file holds counts and strings only, no transcript and no clip id. 
 
 The committed file (2026-11-20) comes from the five `A_remine` builds, the ones the committed rule files were re-mined from (all splits, unified labels, fresh blend70 hypotheses of all 602,776 clips): 905 groups out of 1,242 forms with 2+ targets (was 939 of 1,281 on the 2026-11-19 `A_fixedlabels` builds), 897 `term` and 8 `drug`, 62 with a non-null `regex_fallback` (was 63). The examples run wrote 8,240 rows (train 5,342, val 1,395, test 1,503). About 7.5 minutes on CPU (timed on the 2026-11-19 run).
 
+Examples, five groups from the committed file (heard form: candidates with their counts; `regex_fallback`), each with one short hypothesis / label excerpt from the examples file. These five excerpts are the only transcript excerpts in the repository; the examples file itself stays outside it.
+
+- `étuximab` (`drug`): `cetuximab` 2, `rituximab` 2; fallback null. The tie no regex can break; the context decides (`... FOLFOX plus étuximab` was `... FOLFOX plus cetuximab`, hence the `after:FOLFOX` decision).
+- `difuca` (`drug`): `Diffu-K` 75, `Diffuk` 7; fallback `Diffu-K`. Since the 01 fix this is one drug under two label spellings rather than a real ambiguity (`Il prend Difuca 600 milligrammes` was `Il prend Diffu-K 600 milligrammes`).
+- `morgani` (`term`): `Morgagni` 16, `morganii` 12; fallback `morganii`. An eponym against a bacterium species, where the regex fallback is wrong for the majority (`un nodule de Morgani` was `un nodule de Morgagni`, while `Morganella morgani` was `Morganella morganii`).
+- `tibiales` (`term`): `tibial` 21, `tibiale` 19; 164 correct uses; fallback null. A gender and number pair that only the noun it agrees with can settle (`métaphyses fémorales et tibiales` was `métaphyses fémorale et tibiale`).
+- `abdominale` (`term`): `abdominales` 630, `abdominal` 12; 8,194 correct uses; fallback null. An inflection the model mostly gets right, so any rewrite would do more harm than good (`pour douleur abdominale fébrile` was `pour douleurs abdominales fébriles`).
+
 ```bash
 A=.../regex_v2_ignore_backups/A_remine
 uv run scripts/10_build_confusion_groups.py $A/drugs $A/dictionary $A/PARHAF $A/PARROT $A/acronyms \
