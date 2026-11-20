@@ -256,6 +256,9 @@ RESOLVED = [
     ("un cas singulaire", "un cas singulaire"),
     ("un trocarde aspiration", "un trocart d'aspiration"), ("un trocarde hémostatique", "un trocart d'hémostatique"),
     ("un trocarde dilatation", "un trocart de dilatation"),
+    # no double "de" when the model already wrote the preposition (owner, 2026-11-20)
+    ("un trocarde de 5 mm", "un trocart de 5 mm"), ("Trocarde de 10", "Trocart de 10"),
+    ("un trocarde d' aspiration", "un trocart d' aspiration"),
     ("signes de démolyse", "signes d'hémolyse"), ("la démolyse", "la d'hémolyse"),
     ("signe de lasec positif", "signe de Lasègue positif"), ("lasec", "lasec"),
     ("comprimés de déductiles", "comprimés d'Eductyl"), ("une neubopathie", "une neubopathie"),

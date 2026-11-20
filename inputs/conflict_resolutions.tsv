@@ -26,6 +26,11 @@ démolyse	after:de	d'hémolyse
 démolyse	*	d'hémolyse
 angorde	*	angor de
 trocarde	before_vowel	trocart d'
+# 2026-11-20, owner: "trocarde de" must not become "trocart de de"; when the model already wrote
+# the preposition only the noun is fixed. (Glued "trocarde d'aspiration" is not matched by
+# before:d', since a variant never matches right before a letter; the model never writes it.)
+trocarde	before:d'	trocart
+trocarde	before:de	trocart
 trocarde	*	trocart de
 avirus	*	à virus
 influenzaea	*	influenzae
