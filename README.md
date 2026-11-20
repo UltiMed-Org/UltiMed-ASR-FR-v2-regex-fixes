@@ -10,18 +10,18 @@ License: AGPL-3.0-or-later for everything in this repository (rules, lookup tabl
 
 ## The rules
 
-These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against the corrected labels, see [scripts/README.md](scripts/README.md)) from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
+These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against the corrected labels and re-mined on 2026-11-20 on the unified labels, see [scripts/README.md](scripts/README.md)) from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,081 | 2,005 |
-| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 4,989 | 2,424 |
-| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,577 | 18,273 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,124 | 2,170 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,145 | 2,050 |
+| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 5,057 | 2,447 |
+| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,575 | 18,261 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,147 | 2,173 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
-`rules/confusion_groups.jsonl` is not a rule file: it lists the 939 heard forms the v2 model writes for two or more different words (`étuximab` for `cetuximab` or `rituximab`), which no regex can fix, with the candidates and their counts, for an acoustic second pass. No transcript or clip id is in it. It is tied to the model that produced the hypotheses and must be regenerated for each new model; see `scripts/10_build_confusion_groups.py` and [scripts/README.md](scripts/README.md). Script and docs written with Claude Code.
+`rules/confusion_groups.jsonl` is not a rule file: it lists the 905 heard forms the v2 model writes for two or more different words (`étuximab` for `cetuximab` or `rituximab`), which no regex can fix, with the candidates and their counts, for an acoustic second pass. No transcript or clip id is in it. It is tied to the model that produced the hypotheses and must be regenerated for each new model; see `scripts/10_build_confusion_groups.py` and [scripts/README.md](scripts/README.md). Script and docs written with Claude Code.
 
 The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,192 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) The order used for every with-rules number published for v2 (the benchmark tables and the real-voice page of the model repository) is: drugs, dictionary, PARHAF, PARROT, acronyms, then manual. Since no variant gets two replacements any more, the order of the term files only matters for chained rewrites between them; other orders were not measured. TODO: merge them into one checked list as v1 did.
 
@@ -111,16 +111,16 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 2,005 | 2,095 | 0 | 789,445 | 118,446 |
-| `drug_fix_rules` | 2,424 | 4,989 | 20 | 1,139,316 | 150,298 |
-| `dictionary_fix_rules` | 18,273 | 43,577 | 396 | 10,083,778 | 1,376,861 |
-| `parhaf_fix_rules` | 2,170 | 4,124 | 35 | 1,074,519 | 136,243 |
-| `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,627 |
-| `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,420 |
+| `manual_fix_rules` | 2,050 | 2,145 | 0 | 806,280 | 120,822 |
+| `drug_fix_rules` | 2,447 | 5,057 | 20 | 1,153,644 | 152,505 |
+| `dictionary_fix_rules` | 18,261 | 43,575 | 396 | 10,079,406 | 1,376,358 |
+| `parhaf_fix_rules` | 2,173 | 4,147 | 35 | 1,076,587 | 136,625 |
+| `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,581 |
+| `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,374 |
 
 ### How the lookups are built
 
-`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,032 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,091 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 
@@ -129,7 +129,7 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 - the doctests, and that `lookup/` is up to date with `rules/` (rebuilt into a temporary dir and compared byte for byte);
 - 67 hand-written edge texts (elisions, curly apostrophes, hyphens, whitespace runs, capitals, titles, `aujourd'hui`-like words) on a small rule set built for them;
 - 3,000 random texts per file, made of the file's own variants (randomly upper-cased, accented, cut short or re-separated) glued by spaces, hyphens, apostrophes, elisions and titles;
-- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 4,839, dictionary 10,000, PARHAF 3,939, PARROT 3,000, acronyms 3,000), so every variant of every file but the dictionary is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
+- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 5,057, dictionary 10,000, PARHAF 4,147, PARROT 3,000, acronyms 3,000), so every variant of every file but the dictionary is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
 
 All pass with 0 mismatches (2026-11-15). On 20,093 v2 transcripts (every 30th line of the full corpus), the regex and lookup outputs were also identical for all six files (checked on the files as they were before the 2026-11-15 conflict decisions and convention respelling, not rerun since; manual 175 lines changed, drug 479, dictionary 3,419, PARHAF 559, PARROT 35, acronyms 12). The reference applier is slower than the indexed regexes in Python (about 0.8 to 1.9 ms per line per file, vs 0.1 to 1.2 ms for `compile_rules`); it is written for clarity, not speed.
 
