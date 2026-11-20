@@ -14,7 +14,7 @@ These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against t
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,145 | 2,050 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,155 | 2,058 |
 | `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 5,057 | 2,447 |
 | `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,575 | 18,261 |
 | `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,147 | 2,173 |
@@ -40,7 +40,7 @@ The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the
 
 **These with-rules numbers are optimistic.** The committed rules are learned on ALL splits, test included, on purpose: the list is meant to fix every mistake the model made on the dataset. So the table shows how many seen mistakes the rules fix, not how well they generalize. A control build learned on train+val only keeps 72 % of the gain on dictionary, 61 % on PARHAF, 61 % on drugs and 20 % on acronyms. The PARROT rules are learned on its test split only (PARROT has no other split), so its gain is entirely in-sample.
 
-Overcorrection (2026-11-20, measured with Claude Code by the ultra repo's `evalrules.py`, rules at 8512d62; a line counts when the rules change it at all), per file: on the 602,776 v2 labels drugs, dictionary, PARHAF, PARROT and acronyms rewrite 0 lines and manual 19; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 14, PARHAF 4, drugs, PARROT and acronyms 0, manual 33; on 1,662 French VoxPopuli references, 0 for every file. All six files applied together, in the order above: 19 of 602,776 labels, 47 of 100,000 news sentences (0.05 %) and 0 of 1,662 VoxPopuli references. The 19 labels are all the manual file's conventions respelling label text the unification missed (`Herpes gestationis` -> `herpès gestationis`, `QuantiFERON` -> `Quantiferon`, `re-épithélialisation` -> `réépithélialisation`). Two thirds of the news rewrites are those conventions too (`cardio-vasculaire` -> `cardiovasculaire`, `ultra-rapide` -> `ultrarapide`); the rest are learned rules hitting proper names (`Halutz` -> `Hallux`, `Enner` -> `Scanner`).
+Overcorrection (2026-11-20, measured with Claude Code by the ultra repo's `evalrules.py`, rerun after the owner's decisions of the same day; a line counts when the rules change it at all), per file: on the 602,776 v2 labels drugs, dictionary, PARHAF, PARROT and acronyms rewrite 0 lines and manual 12; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 14, PARHAF 4, drugs, PARROT and acronyms 0, manual 33; on 1,662 French VoxPopuli references, 0 for every file. All six files applied together, in the order above: 12 of 602,776 labels, 47 of 100,000 news sentences (0.05 %) and 0 of 1,662 VoxPopuli references. The 12 labels are all the manual file respelling label text the unification missed, and the owner decided the rule is right for 11 of them, so those labels are to change (`QuantiFERON` -> `Quantiferon`, `re-épithélialisation` -> `réépithélialisation`, `d'Ostéogenèse Imparfaite` -> `d'ostéogenèse imparfaite`); the 12th, `anti-Thyroglobuline` -> `antithyroglobuline`, is kept on both sides by the owner's choice. Before those decisions it was 19 labels: the 6 `d'Herpes gestationis` / `zoster` / `simplex` and the 1 `nitro-imidazole` are no longer touched. Two thirds of the news rewrites are those conventions too (`cardio-vasculaire` -> `cardiovasculaire`, `ultra-rapide` -> `ultrarapide`); the rest are learned rules hitting proper names (`Halutz` -> `Hallux`, `Enner` -> `Scanner`).
 
 TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author's own recordings existed when the rules were built, so their effect on real speech with the v2 model is not measured yet.
 
@@ -111,7 +111,7 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 2,050 | 2,145 | 0 | 806,280 | 120,822 |
+| `manual_fix_rules` | 2,058 | 2,155 | 0 | 809,690 | 121,335 |
 | `drug_fix_rules` | 2,447 | 5,057 | 20 | 1,153,644 | 152,505 |
 | `dictionary_fix_rules` | 18,261 | 43,575 | 396 | 10,079,406 | 1,376,358 |
 | `parhaf_fix_rules` | 2,173 | 4,147 | 35 | 1,076,587 | 136,625 |
@@ -120,7 +120,7 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 ### How the lookups are built
 
-`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,091 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`scripts/08_build_lookup.py rules/*.jsonl` writes `lookup/<name>.lookup.json`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,099 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 
