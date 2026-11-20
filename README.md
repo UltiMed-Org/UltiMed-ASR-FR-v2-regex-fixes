@@ -14,10 +14,10 @@ These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against t
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,155 | 2,058 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,156 | 2,059 |
 | `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 5,057 | 2,447 |
 | `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,575 | 18,261 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,147 | 2,173 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,146 | 2,172 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
 
@@ -40,7 +40,7 @@ The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the
 
 **These with-rules numbers are optimistic.** The committed rules are learned on ALL splits, test included, on purpose: the list is meant to fix every mistake the model made on the dataset. So the table shows how many seen mistakes the rules fix, not how well they generalize. A control build learned on train+val only keeps 72 % of the gain on dictionary, 61 % on PARHAF, 61 % on drugs and 20 % on acronyms. The PARROT rules are learned on its test split only (PARROT has no other split), so its gain is entirely in-sample.
 
-Overcorrection (2026-11-20, measured with Claude Code by the ultra repo's `evalrules.py`, rerun after the owner's decisions of the same day; a line counts when the rules change it at all), per file: on the 602,776 v2 labels drugs, dictionary, PARHAF, PARROT and acronyms rewrite 0 lines and manual 12; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 14, PARHAF 4, drugs, PARROT and acronyms 0, manual 33; on 1,662 French VoxPopuli references, 0 for every file. All six files applied together, in the order above: 12 of 602,776 labels, 47 of 100,000 news sentences (0.05 %) and 0 of 1,662 VoxPopuli references. The 12 labels are all the manual file respelling label text the unification missed, and the owner decided the rule is right for 11 of them, so those labels are to change (`QuantiFERON` -> `Quantiferon`, `re-épithélialisation` -> `réépithélialisation`, `d'Ostéogenèse Imparfaite` -> `d'ostéogenèse imparfaite`); the 12th, `anti-Thyroglobuline` -> `antithyroglobuline`, is kept on both sides by the owner's choice. Before those decisions it was 19 labels: the 6 `d'Herpes gestationis` / `zoster` / `simplex` and the 1 `nitro-imidazole` are no longer touched. Two thirds of the news rewrites are those conventions too (`cardio-vasculaire` -> `cardiovasculaire`, `ultra-rapide` -> `ultrarapide`); the rest are learned rules hitting proper names (`Halutz` -> `Hallux`, `Enner` -> `Scanner`).
+Overcorrection (2026-11-20, measured with Claude Code by the ultra repo's `evalrules.py`, rerun after the owner's decisions of the same day and again once those labels were relabelled; a line counts when the rules change it at all), per file: on the 602,776 v2 labels every file rewrites 0 lines; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 14, PARHAF 4, drugs, PARROT and acronyms 0, manual 33; on 1,662 French VoxPopuli references, 0 for every file. All six files applied together, in the order above: 0 of 602,776 labels, 47 of 100,000 news sentences (0.05 %) and 0 of 1,662 VoxPopuli references. Before the relabelling it was 12 labels, all the manual file respelling label text the unification missed (`QuantiFERON` -> `Quantiferon`, `re-épithélialisation` -> `réépithélialisation`, `d'Ostéogenèse Imparfaite` -> `d'ostéogenèse imparfaite`, `anti-Thyroglobuline` -> `antithyroglobuline`, ...); the owner decided the rule is right for all 12 and the labels now carry those spellings. Before those decisions it was 19 labels: the 6 `d'Herpes gestationis` / `zoster` / `simplex` and the 1 `nitro-imidazole` are no longer touched. Two thirds of the news rewrites are those conventions too (`cardio-vasculaire` -> `cardiovasculaire`, `ultra-rapide` -> `ultrarapide`); the rest are learned rules hitting proper names (`Halutz` -> `Hallux`, `Enner` -> `Scanner`).
 
 TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author's own recordings existed when the rules were built, so their effect on real speech with the v2 model is not measured yet.
 
@@ -111,10 +111,10 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 2,058 | 2,155 | 0 | 809,690 | 121,335 |
+| `manual_fix_rules` | 2,059 | 2,156 | 0 | 810,058 | 121,389 |
 | `drug_fix_rules` | 2,447 | 5,057 | 20 | 1,153,644 | 152,505 |
 | `dictionary_fix_rules` | 18,261 | 43,575 | 396 | 10,079,406 | 1,376,358 |
-| `parhaf_fix_rules` | 2,173 | 4,147 | 35 | 1,076,587 | 136,625 |
+| `parhaf_fix_rules` | 2,172 | 4,146 | 35 | 1,076,131 | 136,574 |
 | `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,581 |
 | `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,374 |
 
@@ -129,7 +129,7 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 - the doctests, and that `lookup/` is up to date with `rules/` (rebuilt into a temporary dir and compared byte for byte);
 - 67 hand-written edge texts (elisions, curly apostrophes, hyphens, whitespace runs, capitals, titles, `aujourd'hui`-like words) on a small rule set built for them;
 - 3,000 random texts per file, made of the file's own variants (randomly upper-cased, accented, cut short or re-separated) glued by spaces, hyphens, apostrophes, elisions and titles;
-- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 5,057, dictionary 10,000, PARHAF 4,147, PARROT 3,000, acronyms 3,000), so every variant of every file but the dictionary is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
+- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 5,057, dictionary 10,000, PARHAF 4,146, PARROT 3,000, acronyms 3,000), so every variant of every file but the dictionary is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
 
 All pass with 0 mismatches (2026-11-15). On 20,093 v2 transcripts (every 30th line of the full corpus), the regex and lookup outputs were also identical for all six files (checked on the files as they were before the 2026-11-15 conflict decisions and convention respelling, not rerun since; manual 175 lines changed, drug 479, dictionary 3,419, PARHAF 559, PARROT 35, acronyms 12). The reference applier is slower than the indexed regexes in Python (about 0.8 to 1.9 ms per line per file, vs 0.1 to 1.2 ms for `compile_rules`); it is written for clarity, not speed.
 
