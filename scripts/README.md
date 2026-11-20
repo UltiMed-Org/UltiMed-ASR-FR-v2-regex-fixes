@@ -57,7 +57,7 @@ Two builds per subset, as in v1:
 - **A, release (committed)**: all splits. Its test numbers show coverage, not generalization: the test clips were in the build.
 - **B, held-out (not committed)**: train + val only, with the real-text labels limited to train + val too, and no merge. Its test numbers estimate how the rules do on unseen clips. PARROT is test-only in v2, so it has no B build and no held-out number. For drugs a train-only build (T) was also made.
 
-Build counts of the blend70 rebuild (2026-11-17, measured with Claude Code from the `build.log` of each build; 02 then 03 merge then 04; candidate errors = misspelled occurrences found by 01; "final" is before 09 removes the hand-decided variants, see "Conflict decisions"):
+History, build counts of the blend70 rebuild (2026-11-17, the current files are described in "Re-mine on the unified labels" below; measured with Claude Code from the `build.log` of each build; 02 then 03 merge then 04; candidate errors = misspelled occurrences found by 01; "final" is before 09 removes the hand-decided variants, see "Conflict decisions"):
 
 | subset | clips | misspelled | 02 rules (errors covered) | merged | final | rejected |
 |---|---|---|---|---|---|---|
@@ -76,6 +76,24 @@ History: the first build, from mix7 alone (2026-11-13), had 2,388 drug, 18,137 d
 
 Rebuild on the fixed labels (2026-11-18, Claude Code): on 2026-11-17 the labels were corrected (drug names without accents, e.g. `Nalbuphine`; eponyms capitalised, e.g. `Mounier-Kuhn`; 329 clips re-synthesised with rewritten text; the 67 split manifests re-synced). Build A was rerun with the same command and the same blend70 hyps, minus the 329 re-synthesised clips, whose transcripts predate their new audio (328 have audio newer than the transcription, and the 329th, `054944_0001`, kept its old audio but is in the rewritten set, so it is excluded too). 01 skips a manifest row with no hyp, so those clips simply drop out. Result after 09, against the files committed on 2026-11-17: drugs 2,424 rules (4,989 variants, was 4,986), dictionary 18,273 (was 18,274), PARHAF 2,170 (was 2,171, 4,124 variants, was 4,128), PARROT 117 and acronyms 43 byte-identical, manual unchanged (05 does not read the labels). 76 dictionary targets and 1 PARHAF target changed, all capitalising an eponym: `Mounier-kuhn` becomes `Mounier-Kuhn`, likewise `Gomori-Grocott`, `Lich-Gregoir`, `Chédiak-Higashi`, `Malpighi-Gartner`, `Boucher-Neuhäuser`, `Gerstmann-Sträussler-Scheinker`. No drug target changed: 09 had already respelled and recased them by the label conventions. No new cross-file conflict appeared.
 
+Re-mine on the unified labels (2026-11-20, Claude Code): the numbers in this paragraph describe the rule files committed now; the tables above and below are kept as history. Two things had changed since the 2026-11-18 rebuild. First, 01 was fixed to keep hyphenated drug names with a one-letter tail as one target (`Diffu-K`; before, `Diffu K` or `Diffu` were learned, see "Hyphenated drug names" below). Second, the labels were unified on headword spellings (e.g. `Kussmaul`, `Tornwaldt`, `colestyramine`, `Castleman`, `desferrioxamine`, `lipocaline`): 286 labels were fixed silently and 182 clips redrawn, and in total 524 clips had audio newer than their transcript. Those 524 clips were re-transcribed with the blend70 fp32 ONNX model, which gives fresh hyps for all 602,776 clips, and build A (all splits) and build B (train+val) were rerun with `07_build_dataset_rules.sh`, same command as before.
+
+Result after 09, against the files committed before: drugs 2,447 rules / 5,057 variants (was 2,424 / 4,989; 68 new variants, 0 lost, all hyphenated names such as `Diffu-K`, `Solu-Médrol`, `Néo-Codion`, `Gyno-Pévaryl`, `Chrono-Indocid`); dictionary 18,261 rules / 43,575 variants (was 18,272 / 43,575; 47 variants lost and 47 gained, 15 targets changed to follow the unified spellings); PARHAF 2,173 rules / 4,147 variants (was 2,169 / 4,123; 25 new, 1 lost, 3 targets changed to `Diffu-K`); PARROT (117) and acronyms (43) byte-identical; manual (2,050) unchanged. No cross-file conflict. About ten of the lost dictionary variants were still-valid fixes (e.g. `pylonéphrite` to `pyélonéphrite`, `dysknée` to `dyspnée`) whose only source clip was redrawn and is now transcribed correctly.
+
+Build stages for A (02 rules / merged / before 09 / final / rejected): drugs 5,071 / 2,452 / 2,452 / 2,447 / 659 (10,638 misspelled occurrences in 21,900 clips); dictionary 43,823 / 18,384 / 18,275 / 18,261 / 14,470; PARHAF 4,197 / 2,196 / 2,187 / 2,173 / 2,145; PARROT 148 / 118 / 118 / 117 / 220; acronyms 43 / 43 / 43 / 43 / 51. B final: drugs 4,739, dictionary 41,060, PARHAF 3,735, acronyms 40.
+
+Evaluation with `evalrules.py` on the fresh hyps, test splits, WER (clips better / worse), with the rules as committed (after 09):
+
+| test split | no rules | A (coverage) | B (held-out) |
+|---|---|---|---|
+| drugs (2,059) | 3.53 % | 2.03 % (838 / 0) | 2.62 % (533 / 0) |
+| dictionary (49,891) | 2.54 % | 2.00 % (9,328 / 2) | 2.15 % (7,124 / 15) |
+| PARHAF (5,489) | 2.85 % | 2.52 % (986 / 0) | 2.65 % (665 / 2) |
+| PARROT (1,548) | 3.64 % | 3.34 % (186 / 0) | none |
+| acronyms (151) | 2.96 % | 2.81 % (4 / 0) | 2.93 % (1 / 0) |
+
+Correct v2 labels rewritten (of 602,776): A 0 for every subset; B drugs 0, dictionary 31, PARHAF 2, acronyms 0. The French news, English Wikipedia and VoxPopuli checks were NOT rerun this time; the "rewritten lines" table below still shows the 2026-11-17 files.
+
 For comparison v1 (five models, all splits, so not like for like): `drug_fix_rules.jsonl` 3,963 rules, 2,732 rejected; `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list) 35,876 rules, 25,466 rejected.
 
 Check with the ultra repo's `evalrules.py` (unchanged): the v2 model's hyps on each subset's test split, WER without rules then with each rule set (clips better / worse), and the lines each set rewrites among the 602,776 correct v2 labels, 100k held-out French news (2023), 1M English Wikipedia sentences and the 1,662 VoxPopuli fr references. v1 = the committed `drug_fix_rules.jsonl` for drugs, `term_fix_rules.jsonl` for the others.
@@ -88,7 +106,7 @@ Check with the ultra repo's `evalrules.py` (unchanged): the v2 model's hyps on e
 | PARROT (1,548) | 3.64 % | 3.50 % (91 / 9) | 3.34 % (186 / 0) | none (test-only) | |
 | acronyms (151) | 2.96 % | 2.84 % (3 / 0) | 2.81 % (4 / 0) | 2.93 % (1 / 0) | |
 
-These are the blend70 numbers (2026-11-17, measured with Claude Code). The A column was evaluated on build A as learned, before 09 removed the hand-decided variants (2,424 drug, 18,279 dictionary, 2,177 PARHAF, 117 PARROT, 43 acronym rules); B had 4,681 / 41,072 / 3,732 / 40 rules and T 4,365. History: on the mix7 hyps the same table read 3.14 % -> 1.77 % (A) for drugs, 2.39 % -> 1.89 % for dictionary, 2.76 % -> 2.47 % for PARHAF, 3.68 % -> 3.37 % for PARROT and 2.90 % -> 2.72 % for acronyms.
+These are the blend70 numbers (2026-11-17, measured with Claude Code), kept as history: the committed files are evaluated in "Re-mine on the unified labels" above. The A column was evaluated on build A as learned, before 09 removed the hand-decided variants (2,424 drug, 18,279 dictionary, 2,177 PARHAF, 117 PARROT, 43 acronym rules); B had 4,681 / 41,072 / 3,732 / 40 rules and T 4,365. History: on the mix7 hyps the same table read 3.14 % -> 1.77 % (A) for drugs, 2.39 % -> 1.89 % for dictionary, 2.76 % -> 2.47 % for PARHAF, 3.68 % -> 3.37 % for PARROT and 2.90 % -> 2.72 % for acronyms.
 
 | rewritten lines | v2 labels | fr news 2023 | en Wikipedia | VoxPopuli fr |
 |---|---|---|---|---|
@@ -266,7 +284,7 @@ A regex maps one heard form to one replacement, so 02 drops every variant whose 
 
 - `heard` is the variant as 01 writes it (lowercase, punctuation dropped), the most frequent spelling of the folded form; match it case- and accent-insensitively, as the rule patterns do.
 - `candidates` are the targets with their error counts, descending; accent or case siblings are one candidate (01 does not count such a slip as an error). Their spelling is the final label spelling: each goes through 09's `apply_conventions` and `recase_to_labels` like a learned replacement.
-- `heard_correct_count` is 02's precision denominator (`count_ngrams` over the hypotheses) minus the error count: how often the model wrote the form where the label had no lexicon word to fix. It is what makes the top of the list (inflections such as `abdominale` for `abdominales`, 630 errors against 8,191 correct uses) a poor target for any rewrite.
+- `heard_correct_count` is 02's precision denominator (`count_ngrams` over the hypotheses) minus the error count: how often the model wrote the form where the label had no lexicon word to fix. It is what makes the top of the list (inflections such as `abdominale` for `abdominales`, 630 errors against 8,194 correct uses) a poor target for any rewrite.
 - `kind` is `drug` when every candidate comes from a drug-lexicon word rarer in French than 01's `MAX_TERM_ZIPF` (the Zipf test keeps out the everyday words of brand presentations, such as `enfants`), else `term`.
 - `sources` are the contributing build folders (subset names); `regex_fallback` is what the committed rule files, applied in README order, make of the bare heard form today, or null. Context rules (`after:`, `before_vowel`) cannot fire on a bare form, so `étuximab` (decided `after:FOLFOX` in `inputs/conflict_resolutions.tsv`) shows null.
 
@@ -274,12 +292,12 @@ The committed file holds counts and strings only, no transcript and no clip id. 
 
 **The heard forms belong to one model**: they are what that model's hypotheses contain, so regenerate the file for every new model (and every relabelling).
 
-The committed file (2026-11-19) comes from the five `A_fixedlabels` builds, the ones the committed rule files were rebuilt from (all splits, corrected labels, blend70 hypotheses): 939 groups out of 1,281 forms with 2+ targets, 931 `term` and 8 `drug`, 63 with a non-null `regex_fallback`. The examples run wrote 8,652 rows (train 5,629, val 1,457, test 1,566). About 7.5 minutes on CPU.
+The committed file (2026-11-20) comes from the five `A_remine` builds, the ones the committed rule files were re-mined from (all splits, unified labels, fresh blend70 hypotheses of all 602,776 clips): 905 groups out of 1,242 forms with 2+ targets (was 939 of 1,281 on the 2026-11-19 `A_fixedlabels` builds), 897 `term` and 8 `drug`, 62 with a non-null `regex_fallback` (was 63). The examples run wrote 8,240 rows (train 5,342, val 1,395, test 1,503). About 7.5 minutes on CPU (timed on the 2026-11-19 run).
 
 ```bash
-A=.../regex_v2_ignore_backups/A_fixedlabels
+A=.../regex_v2_ignore_backups/A_remine
 uv run scripts/10_build_confusion_groups.py $A/drugs $A/dictionary $A/PARHAF $A/PARROT $A/acronyms \
-    --examples-out /somewhere/outside/the/repo/confusion_examples.jsonl
+    --examples-out /somewhere/outside/the/repo/confusion_examples_remine.jsonl
 ```
 
 Pass builds of disjoint clips: folder counts are added. 02's variant regrouping was extracted into `group_variants` so 10 imports it rather than copying it. Written with Claude Code.
@@ -288,7 +306,7 @@ Pass builds of disjoint clips: folder counts are added. 02's variant regrouping 
 
 01 tracked `Diffu-K` as two drugs, `Diffu` and `Diffuk`, so `difuca` showed up in the confusion groups with both as candidates and a learned rule would have dropped the K. Root cause: the drug lexicon takes stage 02's presence needles, and `presence_needle` splits on hyphens and drops parts under 3 letters, so `DIFFU-K` only gave `diffu`. 01's tokenizer keeps `diffu-k` whole, which the lexicon never held, so labels writing `Diffu-K` were not spotted at all, and `Diffu K` (the majority label spelling) gave the target `Diffu`. Now `anchor_words` also adds a hyphenated word of the drug's raw term when the needles kept part of it (27 words: `diffu-k`, `solu-medrol`, `co-renitec`, `l-thyroxine`, `gonal-f`, ...), and `rejoin_letter_tail` rejoins a label word followed by a lone letter when the two spell a hyphenated lexicon word (`Diffu K` -> `diffu-k`). Only a one-letter tail: a short head (`coenzyme A déshydrogénase`, `NO synthase`) and longer parts (`loco régionale`) stay apart, so term words like `Sanarelli-Schwartzman` or `écho-endoscopie` behave as before (`tests/test_drug_asr_rules.py::test_hyphenated_short_tail`).
 
-Measured on the `A_fixedlabels` builds (labels and hypotheses unchanged, old vs new 01): the drugs subset gains 141 error occurrences under the new hyphenated keys (`solu-medrol` 15, `diffu-k` 11, ...), PARHAF moves 129 `diffu` errors to `diffu-k` and gains 108 more (`Diffu-K` labels, `solu-medrol` 55), dictionary gains 22 (`solu-medrol` 20), PARROT and acronyms none. The committed rule files predate this; rebuild with 07 to pick it up. Written with Claude Code.
+Measured on the `A_fixedlabels` builds (labels and hypotheses unchanged, old vs new 01): the drugs subset gains 141 error occurrences under the new hyphenated keys (`solu-medrol` 15, `diffu-k` 11, ...), PARHAF moves 129 `diffu` errors to `diffu-k` and gains 108 more (`Diffu-K` labels, `solu-medrol` 55), dictionary gains 22 (`solu-medrol` 20), PARROT and acronyms none. The committed rule files were re-mined with it on 2026-11-20 (see "Re-mine on the unified labels"). Written with Claude Code.
 
 ## Shared helpers (`_util.py`, 2026-11-20)
 
