@@ -86,6 +86,37 @@ def test_collect_accent_target() -> None:
     print("01 collect accent target: OK")
 
 
+def test_hyphenated_short_tail() -> None:
+    """A drug whose name has a one-letter part (``DIFFU-K``) is one target, ``diffu-k``,
+    whether the label writes ``Diffu-K`` or ``Diffu K``. Before the fix stage 02's needles
+    only gave ``diffu`` (its hyphen split, ``k`` too short), so ``Diffu-K`` labels were
+    never spotted and ``Diffu K`` ones gave the target ``Diffu``, the K dropped. Hyphenated
+    term words whose parts are words keep behaving as before."""
+    mod = load_script("01_extract_drug_errors.py")
+    lex = {"diffu": "Diffu", **dict.fromkeys(mod.anchor_words("DIFFU-K", ["diffu"])),
+           **dict.fromkeys(["sanarelli-schwartzman", "echo-endoscopie", "cranio-encephalique", "loco-regionale"])}
+    assert set(lex) >= {"diffu", "diffu-k"}, lex
+    for label in ("Diffu-K 600 mg le soir", "Diffu K 600 mg le soir"):
+        out = mod.drug_outcomes(label, "difuca 600 mg le soir", lex)
+        assert out == [("diffu-k", "diffu-k", "difuca", "diffu-k")], (label, out)
+        out = mod.drug_outcomes(label, "Diffu-K 600 mg le soir", lex)
+        assert out == [("diffu-k", "diffu-k", None, "diffu-k")], (label, out)
+    cases = [
+        ("phénomène de Sanarelli-Schwartzman", "phénomène de sanarelli chwarzman", "sanarelli chwarzman", "sanarelli-schwartzman"),
+        ("une écho-endoscopie haute", "une échoendoscopie haute", "échoendoscopie", "écho-endoscopie"),
+        ("un traumatisme cranio-encéphalique", "un traumatisme cranioencéphalique", "cranioencéphalique", "cranio-encéphalique"),
+        ("une anesthésie loco-régionale", "une anesthésie locorégionale", "locorégionale", "loco-régionale"),
+    ]
+    for label, hyp, variant, target in cases:
+        out = mod.drug_outcomes(label, hyp, lex)
+        assert [o[2:] for o in out] == [(variant, target)], (label, out)
+    # Only a one-letter tail is rejoined: longer parts and short heads stay apart, as before.
+    assert mod.drug_outcomes("une anesthésie loco régionale", "une anesthésie locorégionale", lex) == []
+    lex["a-deshydrogenase"] = None
+    assert mod.drug_outcomes("coenzyme A déshydrogénase", "coenzyme a déshydrogénase", lex) == []
+    print("01 hyphenated short tail: OK")
+
+
 def test_build_fix_rules() -> None:
     _run_doctests("02_build_fix_rules.py")
 
@@ -195,6 +226,7 @@ if __name__ == "__main__":
     test_extract_drug_errors()
     test_extract_hyps_out()
     test_collect_accent_target()
+    test_hyphenated_short_tail()
     test_build_fix_rules()
     test_merge_rules()
     test_drop_unk_variants()

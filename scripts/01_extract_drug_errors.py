@@ -20,7 +20,8 @@ Drug words are spotted in the LABEL with a lexicon of accent-folded lowercase wo
   ``02_drugs/01_generate_drug_texts.py``, imported rather than copied: it already strips
   ATC filler like "ET DIURETIQUES" or "EN ASSOCIATION"). That import pulls the text
   generators' dependencies (litellm, ...) into this script's header, which is the price
-  of not duplicating the filler list.
+  of not duplicating the filler list. A hyphenated word of the drug's raw term is
+  added whole when the anchors kept part of it (``anchor_words``: ``Diffu-K``).
 
 Words shorter than ``MIN_DRUG_LEN`` or holding a digit are left out: they are sigles,
 dosage codes or ordinary words ("fer", "b12") that a spelling rule must not touch.
@@ -50,7 +51,9 @@ least half of its letters align inside the variant. Such variants are listed und
 
 Tokenization: lowercase, punctuation dropped, French elisions split off
 (``l'alfacalcidol`` -> ``l'`` ``alfacalcidol``) so the drug is its own token; a hyphen
-inside a word is kept. Variants are rendered with the elision re-attached
+inside a word is kept, and in the label a word followed by a lone letter is rejoined
+when the two spell a hyphenated lexicon word (``Diffu K`` -> ``diffu-k``, see
+``rejoin_letter_tail``). Variants are rendered with the elision re-attached
 (``d'hexaméthasone``). Casing is irrelevant here: the rules built by
 ``02_build_fix_rules.py`` match case-insensitively and write the canonical casing.
 
@@ -144,9 +147,30 @@ def _stage02_anchor_words() -> set[str]:
     spec.loader.exec_module(stage)
     words = set()
     for line in DRUG_ENTRIES.open(encoding="utf-8"):
-        for needle in stage._acceptable_needles(json.loads(line)):
-            words.update(fold(w) for w in tokens(needle))
+        entry = json.loads(line)
+        words |= anchor_words(entry.get("term", ""), stage._acceptable_needles(entry))
     return words
+
+
+def anchor_words(term: str, needles: list[str]) -> set[str]:
+    """Folded words of a drug's presence ``needles``, plus each hyphenated word of its raw
+    ``term`` the needles kept part of.
+
+    The needles come out of stage 02's ``presence_needle``, which splits on hyphens and
+    drops parts under 3 letters, so ``DIFFU-K`` alone would only give ``diffu``: labels
+    writing ``Diffu-K`` (one token here) were then never spotted, and ``Diffu K`` became
+    the target ``Diffu``, the K left out. A hyphenated word none of whose parts survived
+    (``ANTI-INFECTIEUX``, an ATC class) stays out.
+
+    >>> sorted(anchor_words("DIFFU-K", ["diffu"]))
+    ['diffu', 'diffu-k']
+    >>> sorted(anchor_words("SOLU-MEDROL 40 mg", ["solu medrol"]))
+    ['medrol', 'solu', 'solu-medrol']
+    >>> sorted(anchor_words("ANTI-INFECTIEUX ET CORTICOIDES", ["corticoides"]))
+    ['corticoides']
+    """
+    words = {fold(w) for n in needles for w in tokens(n)}
+    return words | {w for w in map(fold, tokens(term)) if "-" in w and words & set(w.split("-"))}
 
 
 def term_words(path: Path, max_zipf: float = MAX_TERM_ZIPF) -> set[str]:
@@ -240,6 +264,33 @@ def _hyp_span(ref: list[str], i1: int, i2: int, lo_i: int, hi_i: int,
     return picked, lo_i, hi_i
 
 
+def rejoin_letter_tail(toks: list[str], lex: dict[str, str | None]) -> list[str]:
+    """A label token followed by a lone letter (``Diffu K``) rejoined as the hyphenated
+    lexicon word they spell (``diffu-k``). The letter cannot be a lexicon word on its own,
+    so without this the drug is spotted as its long half (target ``Diffu``, the K
+    dropped). Hyphen and space are one and the same to the rules' patterns, so the
+    hyphenated target covers both spellings. Only a one-letter TAIL is rejoined: a short
+    head is too often a word of its own (``coenzyme A déshydrogénase`` must not become
+    ``a-déshydrogénase``, ``NO synthase`` stays apart), and so are longer parts
+    (``loco régionale``), as before.
+
+    >>> lex = {"diffu-k": None, "loco-regionale": None, "a-deshydrogenase": None}
+    >>> rejoin_letter_tail(["le", "diffu", "k", "600"], lex)
+    ['le', 'diffu-k', '600']
+    >>> rejoin_letter_tail(["loco", "régionale"], lex), rejoin_letter_tail(["vitamine", "k"], lex)
+    (['loco', 'régionale'], ['vitamine', 'k'])
+    >>> rejoin_letter_tail(["coenzyme", "a", "déshydrogénase"], lex)
+    ['coenzyme', 'a', 'déshydrogénase']
+    """
+    out: list[str] = []
+    for w in toks:
+        if out and len(w) == 1 and fold(f"{out[-1]}-{w}") in lex:
+            out[-1] = f"{out[-1]}-{w}"
+        else:
+            out.append(w)
+    return out
+
+
 def drug_outcomes(label: str, hyp: str, lex: dict[str, str | None]
                   ) -> list[tuple[str, str, str | None, str]]:
     """``(folded key, label spelling, variant, target)`` per drug occurrence in the label.
@@ -269,7 +320,7 @@ def drug_outcomes(label: str, hyp: str, lex: dict[str, str | None]
     >>> drug_outcomes("Arrêt de la mirtazapine.", "Arrêt de la myrta <unk>", lex)
     []
     """
-    ref, h = tokens(label), tokens(hyp)
+    ref, h = rejoin_letter_tail(tokens(label), lex), tokens(hyp)
     drugs = {i: fold(w) for i, w in enumerate(ref) if fold(w) in lex}
     if not drugs:
         return []
