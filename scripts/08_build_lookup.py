@@ -31,7 +31,8 @@ Layout of the output (valid JSON, one rule per line so diffs stay readable)::
 
 Usage::
 
-    uv run scripts/08_build_lookup.py rules/*.jsonl            # -> lookup/<name>.lookup.json
+    uv run scripts/08_build_lookup.py rules/*_fix_rules.jsonl  # -> lookup/<name>.lookup.json
+                                                                 # (not rules/*.jsonl: confusion_groups.jsonl is no rule file)
     uv run scripts/08_build_lookup.py IN.jsonl --out OUT.json
 
 This file was written by Claude Code.
