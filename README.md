@@ -27,18 +27,18 @@ The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,
 
 ### Measured effect
 
-The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the corrected labels (2026-11-18), WER without rules and then with all six files applied in the order drug, dictionary, PARHAF, PARROT, acronyms, manual (rules at 17594d3):
+The v2 model (fp32 ONNX, beam 5) on each subset's test split, scored against the corrected labels (2026-11-20), WER without rules and then with all six files applied in the order drug, dictionary, PARHAF, PARROT, acronyms, manual (rules at 8512d62):
 
 | test split | words | no rules | v2 rules |
 |---|---|---|---|
-| drugs | 65,574 | 3.56 % | 2.16 % |
+| drugs | 65,574 | 3.56 % | 2.15 % |
 | drug sentences | 3,537 | 3.68 % | 2.83 % |
 | dictionary | 239,173 | 2.42 % | 1.89 % |
-| PARHAF | 204,210 | 2.74 % | 2.41 % |
+| PARHAF | 204,210 | 2.74 % | 2.40 % |
 | PARROT | 95,035 | 3.40 % | 3.14 % |
 | acronyms | 3,435 | 2.85 % | 2.65 % |
 
-**These with-rules numbers are optimistic.** The committed rules are learned on ALL splits, test included, on purpose: the list is meant to fix every mistake the model made on the dataset. So the table shows how many seen mistakes the rules fix, not how well they generalize. A control build learned on train+val only keeps 72 % of the gain on dictionary, 62 % on PARHAF, 61 % on drugs and 20 % on acronyms. The PARROT rules are learned on its test split only (PARROT has no other split), so its gain is entirely in-sample.
+**These with-rules numbers are optimistic.** The committed rules are learned on ALL splits, test included, on purpose: the list is meant to fix every mistake the model made on the dataset. So the table shows how many seen mistakes the rules fix, not how well they generalize. A control build learned on train+val only keeps 72 % of the gain on dictionary, 61 % on PARHAF, 61 % on drugs and 20 % on acronyms. The PARROT rules are learned on its test split only (PARROT has no other split), so its gain is entirely in-sample.
 
 Overcorrection, per file (drugs, dictionary, PARHAF and acronyms; TODO for PARROT): on the v2 labels these files rewrite 0 lines; on 100,000 held-out French news sentences (2023) the dictionary file rewrites 10, PARHAF 2, drugs 1, acronyms 0; on 1,662 French VoxPopuli references, 0. TODO: overcorrection of all files applied together, in the final order (their WER is in the table above).
 
