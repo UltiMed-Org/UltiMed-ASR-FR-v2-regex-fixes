@@ -298,7 +298,7 @@ Examples, five groups from the committed file (heard form: candidates with their
 
 - `étuximab` (`drug`): `cetuximab` 2, `rituximab` 2; fallback null. The tie no regex can break; the context decides (`... FOLFOX plus étuximab` was `... FOLFOX plus cetuximab`, hence the `after:FOLFOX` decision).
 - `difuca` (`drug`): `Diffu-K` 75, `Diffuk` 7; fallback `Diffu-K`. Since the 01 fix this is one drug under two label spellings rather than a real ambiguity (`Il prend Difuca 600 milligrammes` was `Il prend Diffu-K 600 milligrammes`).
-- `morgani` (`term`): `Morgagni` 16, `morganii` 12; fallback `morganii`. An eponym against a bacterium species, where the regex fallback is wrong for the majority (`un nodule de Morgani` was `un nodule de Morgagni`, while `Morganella morgani` was `Morganella morganii`).
+- `morgani` (`term`): `Morgagni` 16, `morganii` 12; fallback `morganii`. An eponym against a bacterium species, where the regex fallback is wrong for the majority (`un nodule de Morgani` was `un nodule de Morgagni`).
 - `tibiales` (`term`): `tibial` 21, `tibiale` 19; 164 correct uses; fallback null. A gender and number pair that only the noun it agrees with can settle (`métaphyses fémorales et tibiales` was `métaphyses fémorale et tibiale`).
 - `abdominale` (`term`): `abdominales` 630, `abdominal` 12; 8,194 correct uses; fallback null. An inflection the model mostly gets right, so any rewrite would do more harm than good (`pour douleur abdominale fébrile` was `pour douleurs abdominales fébriles`).
 
