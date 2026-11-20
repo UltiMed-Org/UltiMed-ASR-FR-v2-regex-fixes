@@ -264,6 +264,15 @@ RESOLVED = [
     ("un tulle vaceliné", "un tulle vaseliné"), ("à pseudononos", "à pseudomonas"),
     ("une agamagloblobulinémie", "une agammaglobulinémie"), ("en sous-scutanée", "en sous-cutanée"),
     ("une dégénérescence formyaline", "une dégénérescence forme hyaline"),
+    # owner decisions on labels the rules rewrote (2026-11-20): Latin herpes and nitro-imidazole
+    # untouched, ostéogenèse imparfaite fully lowercase
+    ("antécédent d'Herpes gestationis", "antécédent d'Herpes gestationis"),
+    ("une poussée d'herpes simplex", "une poussée d'herpes simplex"),
+    ("par nitro-imidazole", "par nitro-imidazole"), ("par nitro-imidazolé", "par nitro-imidazolé"),
+    ("maladie d'Ostéogenèse Imparfaite", "maladie d'ostéogenèse imparfaite"),
+    ("l'Ostéogénèse Imparfaite", "l'ostéogenèse imparfaite"),
+    ("une ostéogénèse Imparfaite", "une ostéogenèse imparfaite"),
+    ("Ostéogenèse Imparfaite de type 1", "Ostéogenèse imparfaite de type 1"),
     ("signes de démolyse", "signes d'hémolyse"), ("la démolyse", "la d'hémolyse"),
     ("signe de lasec positif", "signe de Lasègue positif"), ("lasec", "lasec"),
     ("comprimés de déductiles", "comprimés d'Eductyl"), ("une neubopathie", "une neubopathie"),

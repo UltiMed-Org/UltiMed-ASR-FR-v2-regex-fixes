@@ -78,3 +78,15 @@ pseudononos	pseudomonas
 agamagloblobulinémie	agammaglobulinémie
 sous-scutanée	sous-cutanée
 formyaline	forme hyaline
+# 2026-11-20, owner: Herpes gestationis / zoster / simplex keep their Latin spelling, so the generated
+# convention row d'herpes -> d'herpès is switched off (an empty replacement takes the pattern first;
+# the model writes unaccented d'herpes 4 times in the blend70 transcripts, 2 of them Latin).
+d'herpes	*	
+# 2026-11-20, owner: nitro-imidazole stays without an accent, so the convention row nitro imidazolé
+# is switched off too (the pattern ignores accents, it cannot tell the two apart).
+nitro imidazolé	*	
+# 2026-11-20, owner: ostéogenèse imparfaite fully lowercase. The elided rows come first: a bare row
+# matched after d' or l' starts on the capital O and would keep it.
+d'ostéogénèse imparfaite	d'ostéogenèse imparfaite
+l'ostéogénèse imparfaite	l'ostéogenèse imparfaite
+ostéogénèse imparfaite	ostéogenèse imparfaite
