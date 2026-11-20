@@ -174,3 +174,6 @@ glison	*
 # both capitals, and intéral / interal is the masculine entéral in every file (dictionary said entérale).
 riobranchodilatée	*	Rio Branco dilatée
 interal	*	entéral
+# 2026-11-20, owner: the potassium brand is Diffu-K in every spelling (the conventions keep the lowercase
+# first letter of the learned diffuk per os, so it is pinned here).
+diffucaperos	*	Diffu-K per os
