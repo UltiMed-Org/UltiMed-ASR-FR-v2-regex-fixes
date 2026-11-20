@@ -69,3 +69,12 @@ soemmering	Sömmerring
 soemmerring	Sömmerring
 jadassohn-levandovsky	Jadassohn-Lewandowsky
 gangraenosum	gangrenosum
+# 2026-11-20, owner: fixes the v1 dictionary rule file had (lookup at 64b4642^) and the v2
+# rebuild lost; sous-scutanée went to souscutanée there and on through the souscutanée row above.
+dysknée	dyspnée
+topranycine	tobramycine
+vaceliné	vaseliné
+pseudononos	pseudomonas
+agamagloblobulinémie	agammaglobulinémie
+sous-scutanée	sous-cutanée
+formyaline	forme hyaline

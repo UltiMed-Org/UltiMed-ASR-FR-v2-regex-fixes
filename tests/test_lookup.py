@@ -259,6 +259,11 @@ RESOLVED = [
     # no double "de" when the model already wrote the preposition (owner, 2026-11-20)
     ("un trocarde de 5 mm", "un trocart de 5 mm"), ("Trocarde de 10", "Trocart de 10"),
     ("un trocarde d' aspiration", "un trocart d' aspiration"),
+    # v1 dictionary fixes lost in the v2 rebuild, restored by hand (owner, 2026-11-20)
+    ("une dysknée d'effort", "une dyspnée d'effort"), ("sous topranycine", "sous tobramycine"),
+    ("un tulle vaceliné", "un tulle vaseliné"), ("à pseudononos", "à pseudomonas"),
+    ("une agamagloblobulinémie", "une agammaglobulinémie"), ("en sous-scutanée", "en sous-cutanée"),
+    ("une dégénérescence formyaline", "une dégénérescence forme hyaline"),
     ("signes de démolyse", "signes d'hémolyse"), ("la démolyse", "la d'hémolyse"),
     ("signe de lasec positif", "signe de Lasègue positif"), ("lasec", "lasec"),
     ("comprimés de déductiles", "comprimés d'Eductyl"), ("une neubopathie", "une neubopathie"),
