@@ -6,7 +6,7 @@
 """Tests for the rule build scripts in scripts/: the doctests of 01_extract_drug_errors.py (tokenizing,
 drug spotting, the character-level mapping inside a multi-word replace, glued elisions)
 and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply_rules),
-03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py,
+03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py, _util.py (the shared JSONL helpers),
 06_build_convention_fixes.py and 09_apply_resolutions.py, plus 10_build_confusion_groups.py
 (doctests and a run on a tiny synthetic build folder).
 
@@ -33,8 +33,8 @@ def _has_scripts_dir(test: str) -> bool:
     return d.is_dir()
 
 
-def _run_doctests(name: str) -> None:
-    mod = load_script(name)
+def _run_doctests(name: str, module: str | None = None) -> None:
+    mod = load_script(name, module)
     failed, attempted = doctest.testmod(mod)
     assert attempted and not failed, (name, failed, attempted)
     print(f"{name}: OK ({attempted} cases)")
@@ -115,6 +115,11 @@ def test_hyphenated_short_tail() -> None:
     lex["a-deshydrogenase"] = None
     assert mod.drug_outcomes("coenzyme A déshydrogénase", "coenzyme a déshydrogénase", lex) == []
     print("01 hyphenated short tail: OK")
+
+
+def test_util() -> None:
+    # Under the name the scripts give it: as "_util" it would replace tests/_util.py in sys.modules.
+    _run_doctests("_util.py", "ultimed_util")
 
 
 def test_build_fix_rules() -> None:
@@ -227,6 +232,7 @@ if __name__ == "__main__":
     test_extract_hyps_out()
     test_collect_accent_target()
     test_hyphenated_short_tail()
+    test_util()
     test_build_fix_rules()
     test_merge_rules()
     test_drop_unk_variants()

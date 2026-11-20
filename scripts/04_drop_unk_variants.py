@@ -24,7 +24,6 @@ added after the build: the term rules got the 2024 Leipzig French news this way
 This file was written by Claude Code.
 """
 import importlib.util
-import json
 import re
 from pathlib import Path
 
@@ -32,12 +31,12 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("b", _HERE / "02_build_fix_rules.py")
-b = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(b)
-_mspec = importlib.util.spec_from_file_location("m", _HERE / "03_merge_rules.py")
-m = importlib.util.module_from_spec(_mspec)
-_mspec.loader.exec_module(m)
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+b = util.load_script("b", "02_build_fix_rules.py")
+m = util.load_script("m", "03_merge_rules.py")
 
 
 def has_unk(variant: str) -> bool:
@@ -114,8 +113,8 @@ def found_in_texts(rules: list[dict], texts, elided_only: bool = False) -> set[s
 @click.option("--guard", "guard_paths", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="also drop every variant these correct texts hold (manifest jsonl or .txt, one sentence per line)")
 def main(src: Path, dst: Path, labels_paths: tuple[Path, ...], guard_paths: tuple[Path, ...]) -> None:
-    rules = b.load_rules(src)
-    read = lambda paths: [t for p in paths for t in b._read_texts(p, "text")]
+    rules = util.read_jsonl(src)
+    read = lambda paths: [t for p in paths for t in util.read_texts(p, "text")]
     real = found_in_texts(rules, read(labels_paths), elided_only=True) if labels_paths else set()
     if real:
         logger.info(f"{len(real)} variants with an elided last letter occur in a label: {sorted(real)[:20]}")
@@ -124,8 +123,7 @@ def main(src: Path, dst: Path, labels_paths: tuple[Path, ...], guard_paths: tupl
         logger.info(f"{len(guarded)} variants occur in a guard text: {sorted(guarded)[:20]}")
     real |= guarded
     out, dropped = drop_unk_variants(rules, lambda v: has_unk(v) or v in real)
-    with dst.open("w", encoding="utf-8") as f:
-        f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in out)
+    util.write_jsonl(dst, out)
     logger.info(f"{src}: dropped {dropped} variants, {len(rules)} -> {len(out)} rules")
 
 

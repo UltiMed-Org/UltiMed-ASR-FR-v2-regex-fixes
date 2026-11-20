@@ -38,7 +38,6 @@ Usage: uv run scripts/09_apply_resolutions.py SRC.jsonl DST.jsonl [--resolutions
 This file was written by Claude Code.
 """
 import importlib.util
-import json
 import re
 from collections import Counter
 from pathlib import Path
@@ -47,17 +46,12 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-
-
-def _load(name: str, file: str):
-    spec = importlib.util.spec_from_file_location(name, _HERE / file)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-u = _load("u", "04_drop_unk_variants.py")
-mr = _load("mr", "05_build_manual_rules.py")
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+u = util.load_script("u", "04_drop_unk_variants.py")
+mr = util.load_script("mr", "05_build_manual_rules.py")
 b = u.b  # 04 already loads 02, no third copy of it here
 
 
@@ -111,7 +105,7 @@ def apply_conventions(rules: list[dict], labels=None) -> tuple[list[tuple[str, s
     >>> apply_conventions(rules, ["Signe de Caldeyro-Barcia.", "sous bévacizumab"])
     ([('bévacizumab', 'bevacizumab')], [('caldeyro-barcia', 'caldeyrobarcia')])
     """
-    cv = _load("cv", "06_build_convention_fixes.py")  # needs UltiMed-ASR-FR-v1-scripts
+    cv = util.load_script("cv", "06_build_convention_fixes.py")  # needs UltiMed-ASR-FR-v1-scripts
     reps = {r["replacement"] for r in rules}
     respell = {rep: new for rep in reps if (new := cv.convention_fixes([rep]).get(rep, rep)) != rep}
     refused = []
@@ -277,18 +271,18 @@ def recase_to_labels(rules: list[dict], texts: list[str]) -> None:
 @click.option("--no-conventions", is_flag=True, help="do not respell the replacements")
 @click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing (words and whole phrases)")
 def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_conventions: bool, no_recase: bool) -> None:
-    rules = b.load_rules(src)
+    rules = util.read_jsonl(src)
     n0 = len(rules)
     rules, dropped = drop_resolved(rules, resolved_patterns(resolutions.read_text(encoding="utf-8").splitlines()))
     logger.info(f"{src.name}: dropped {dropped} resolved variants, {n0} -> {len(rules)} rules")
-    texts = [json.loads(line)["text"] for mf in labels for line in open(mf, encoding="utf-8")] if labels else None
+    texts = [t for mf in labels for t in util.read_texts(mf, "text")] if labels else None
     if not no_conventions:
         changed, refused = apply_conventions(rules, texts)
         logger.info(f"{len(changed)} replacements respelled by the label conventions: {sorted(set(changed))[:20]}")
         logger.info(f"{len(refused)} respellings refused, the labels do not back them: {refused[:20]}")
     if texts is not None and not no_recase:
         recase_to_labels(rules, texts)
-    dst.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rules), encoding="utf-8")
+    util.write_jsonl(dst, rules)
     logger.info(f"wrote {dst}")
 
 

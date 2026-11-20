@@ -83,6 +83,10 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
 _REPO = _HERE.parent
 # The dataset scripts repo (UltiMed-ASR-FR-v1-scripts) owns the drug lexicon, the casing table, the
 # manifest helpers and the release manifests these scripts read: a sibling checkout by default,
@@ -142,9 +146,7 @@ def join_tokens(toks: list[str]) -> str:
 
 def _stage02_anchor_words() -> set[str]:
     """Folded words of every stage-02 drug's presence anchors."""
-    spec = importlib.util.spec_from_file_location("generate_drug_texts", DRUG_STAGE)
-    stage = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(stage)
+    stage = util.load_script("generate_drug_texts", DRUG_STAGE)
     words = set()
     for line in DRUG_ENTRIES.open(encoding="utf-8"):
         entry = json.loads(line)

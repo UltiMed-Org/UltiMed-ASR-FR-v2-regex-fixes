@@ -37,23 +37,20 @@ Usage: uv run scripts/05_build_manual_rules.py [TSV ...] [--out OUT.jsonl] [--lo
 This file was written by Claude Code.
 """
 import importlib.util
-import json
 from pathlib import Path
 
 import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("b", _HERE / "02_build_fix_rules.py")
-b = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(b)
-_mspec = importlib.util.spec_from_file_location("m", _HERE / "03_merge_rules.py")
-m = importlib.util.module_from_spec(_mspec)
-_mspec.loader.exec_module(m)
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+b = util.load_script("b", "02_build_fix_rules.py")
+m = util.load_script("m", "03_merge_rules.py")
 # 08 owns the lookup format; loaded here only to refresh the manual lookup after a rebuild.
-_lspec = importlib.util.spec_from_file_location("lk", _HERE / "08_build_lookup.py")
-lk = importlib.util.module_from_spec(_lspec)
-_lspec.loader.exec_module(lk)
+lk = util.load_script("lk", "08_build_lookup.py")
 
 
 INPUTS = _HERE.parent / "inputs"
@@ -153,12 +150,9 @@ def main(tsvs: tuple[Path, ...], out: Path, lookup_out: Path | None, no_lookup: 
         if missing := [str(mf) for mf in labels if not mf.exists()]:
             raise click.UsageError(f"label manifests not found: {missing} (set ULTIMED_SCRIPTS_DIR, --labels or --no-recase)")
         # Loaded here, not at import: 09 imports this module.
-        _rspec = importlib.util.spec_from_file_location("ar", _HERE / "09_apply_resolutions.py")
-        ar = importlib.util.module_from_spec(_rspec)
-        _rspec.loader.exec_module(ar)
-        ar.recase_to_labels(rules, [json.loads(line)["text"] for mf in labels for line in open(mf, encoding="utf-8")])
-    with out.open("w", encoding="utf-8") as f:
-        f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rules)
+        ar = util.load_script("ar", "09_apply_resolutions.py")
+        ar.recase_to_labels(rules, [t for mf in labels for t in util.read_texts(mf, "text")])
+    util.write_jsonl(out, rules)
     logger.info(f"{', '.join(t.name for t in tsvs)} -> {out}: {len(rules)} rules")
     if not no_lookup:
         # A custom OUT gets its lookup beside it, so a trial build never overwrites lookup/.

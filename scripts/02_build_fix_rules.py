@@ -73,9 +73,11 @@ from rapidfuzz.distance import Levenshtein
 from wordfreq import zipf_frequency
 
 _HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("extract_drug_errors", _HERE / "01_extract_drug_errors.py")
-extract = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(extract)
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+extract = util.load_script("extract_drug_errors", "01_extract_drug_errors.py")
 fold, tokens, load_lexicon = extract.fold, extract.tokens, extract.load_lexicon
 
 DEFAULT_ERRORS = extract.DEFAULT_OUT
@@ -523,25 +525,10 @@ def compile_rules(rules: list[dict]):
     return fix
 
 
-def _read_texts(path: Path, field: str):
-    """Yield `field` of each JSONL row, or each non-empty line of a plain `.txt` file (one sentence per line).
-
-    >>> import tempfile, os
-    >>> d = tempfile.mkdtemp()
-    >>> _ = Path(d, "w.txt").write_text("L'abbé est venu.\\n\\ns'il vient\\n", encoding="utf-8")
-    >>> list(_read_texts(Path(d, "w.txt"), "text"))
-    ["L'abbé est venu.", "s'il vient"]
-    >>> _ = Path(d, "m.jsonl").write_text('{"text": "a"}\\n', encoding="utf-8")
-    >>> list(_read_texts(Path(d, "m.jsonl"), "text"))
-    ['a']
-    """
-    with path.open(encoding="utf-8") as f:
-        for line in f:
-            if path.suffix == ".txt":
-                if line.strip():
-                    yield line.rstrip("\n")
-            else:
-                yield json.loads(line)[field]
+# Kept under 02's old names for the scripts outside this repo that load 02 and call them
+# (the drug-rules evaluation scripts of the ultra-onnx repo); the code lives in _util.py.
+_read_texts = util.read_texts
+load_rules = util.read_jsonl  # the ordered rules of a ``*_fix_rules.jsonl``
 
 
 @click.command()
@@ -584,25 +571,20 @@ def main(hyps: tuple[Path, ...], errors_paths: tuple[Path, ...], labels_paths: t
     """Write the ordered drug fix rules."""
     report = merge_reports(json.loads(p.read_text(encoding="utf-8")) for p in errors_paths or (DEFAULT_ERRORS,))
     labels_paths = labels_paths or DEFAULT_LABELS
-    labels = (t for p in labels_paths for t in _read_texts(p, "text"))
-    rules, rejected = build_rules(report, [t for p in hyps for t in _read_texts(p, "hyp")], labels, load_lexicon(lexicons, max_term_zipf),
+    labels = (t for p in labels_paths for t in util.read_texts(p, "text"))
+    rules, rejected = build_rules(report, [t for p in hyps for t in util.read_texts(p, "hyp")], labels, load_lexicon(lexicons, max_term_zipf),
                                   min_len, min_count, min_share, min_precision, min_ratio, min_count_words,
                                   max_word_zipf)
     logger.info(f"{len(rules)} rules covering {sum(r['count'] for r in rules)} errors; rejected "
                 f"{dict(Counter(r['reason'] for r in rejected))}")
     if names_paths:
-        names = {fold(t).strip() for p in names_paths for t in _read_texts(p, "text")}
+        names = {fold(t).strip() for p in names_paths for t in util.read_texts(p, "text")}
         logger.info(f"{guard_names(rules, names)} rules are also French names: kept, but not after a title")
     rejected_out = out.with_suffix(".rejected.jsonl")
     for path, rows in ((out, rules), (rejected_out, rejected)):
-        path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+        util.write_jsonl(path, rows)
     logger.info(f"wrote {out} and {rejected_out}")
 
-
-def load_rules(path: Path) -> list[dict]:
-    """The ordered rules of a ``drug_fix_rules.jsonl``."""
-    with Path(path).open(encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
 
 
 if __name__ == "__main__":

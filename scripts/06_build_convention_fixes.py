@@ -36,7 +36,6 @@ rules (so they also respell what a learned rule wrote).
 This file was written by Claude Code.
 """
 import importlib.util
-import json
 import sys
 import unicodedata
 from collections import Counter
@@ -46,9 +45,11 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("b", _HERE / "02_build_fix_rules.py")
-b = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(b)
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+b = util.load_script("b", "02_build_fix_rules.py")
 sys.path.insert(0, str(b.extract.SCRIPTS_DIR / "utils"))  # see 01's SCRIPTS_DIR
 from label_conventions import apply_label_conventions  # noqa: E402
 
@@ -137,7 +138,7 @@ def main(variants_tsv, out: Path, labels, max_fire) -> None:
         family_total.update({f: total for f, _ in forms})
         fixes.update(convention_fixes([f for f, _ in forms]))
     if labels:
-        texts = (json.loads(line)["text"] for mf in labels for line in open(mf, encoding="utf-8"))
+        texts = (t for mf in labels for t in util.read_texts(mf, "text"))
         fired = firing(fixes, texts)
         bad = {v for v, n in fired.items() if n > max_fire * family_total[v]}
         logger.info(f"dropped {len(bad)} rules that change converted labels: {sorted(bad)}")

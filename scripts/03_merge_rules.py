@@ -22,16 +22,17 @@ every text comes out exactly as with the original file.
         --hyps drugs_hyps.UltiMed.jsonl ... --labels ../99_hf_release/data/NeMO_files/full.jsonl ...
 """
 import importlib.util
-import json
 from pathlib import Path
 
 import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("b", _HERE / "02_build_fix_rules.py")
-b = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(b)
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+b = util.load_script("b", "02_build_fix_rules.py")
 
 
 def _prefix(r: dict) -> str:
@@ -110,13 +111,11 @@ def merge_checked(rules: list[dict], texts: list[str]) -> list[dict]:
 @click.option("--labels", "labels_paths", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="manifest jsonl (field text) or .txt (one sentence per line)")
 def main(rules_path: Path, out: Path, hyps_paths: tuple[Path, ...], labels_paths: tuple[Path, ...]):
-    rules = b.load_rules(rules_path)
-    texts = sorted({t for p in hyps_paths for t in b._read_texts(p, "hyp")} | {t for p in labels_paths for t in b._read_texts(p, "text")})
+    rules = util.read_jsonl(rules_path)
+    texts = sorted({t for p in hyps_paths for t in util.read_texts(p, "hyp")} | {t for p in labels_paths for t in util.read_texts(p, "text")})
     logger.info(f"{len(rules)} rules, checking on {len(texts)} unique texts")
     merged = merge_checked(rules, texts)
-    with open(out, "w", encoding="utf-8") as f:
-        for r in merged:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    util.write_jsonl(out, merged)
     logger.info(f"wrote {len(merged)} rules to {out} ({out.stat().st_size / 1e6:.1f} MB vs {rules_path.stat().st_size / 1e6:.1f} MB)")
 
 

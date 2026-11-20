@@ -76,12 +76,14 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
 REPO = _HERE.parent
 # 09 carries the whole import chain this script needs: 09 -> 04 (``ar.u``) -> 02 (``ar.b``)
 # -> 01 (``ar.b.extract``), each loaded once, plus 09's own label respelling helpers.
-_spec = importlib.util.spec_from_file_location("ar", _HERE / "09_apply_resolutions.py")
-ar = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(ar)
+ar = util.load_script("ar", "09_apply_resolutions.py")
 b = ar.b
 extract = b.extract
 
@@ -96,9 +98,7 @@ SPLITS = ("train", "val", "test")
 def read_build(folder: Path) -> tuple[dict, list[dict]]:
     """``(01 report, hypothesis rows)`` of one build folder (``errors.json``, ``hyps.jsonl``)."""
     report = json.loads((folder / "errors.json").read_text(encoding="utf-8"))
-    with (folder / "hyps.jsonl").open(encoding="utf-8") as f:
-        rows = [json.loads(line) for line in f if line.strip()]
-    return report, rows
+    return report, util.read_jsonl(folder / "hyps.jsonl")
 
 
 def collect_groups(builds: list[tuple[str, dict, list[str]]]) -> dict[tuple, dict]:
@@ -289,13 +289,13 @@ def main(folders: tuple[Path, ...], out: Path, rule_paths: tuple[Path, ...], lab
     targets = {t for g in groups.values() for raw in g["targets"].values() for t in raw}
     label_texts = None
     if not no_respell:
-        label_texts = [t for p in labels_paths or b.DEFAULT_LABELS for t in b._read_texts(Path(p), "text")]
+        label_texts = [t for p in labels_paths or b.DEFAULT_LABELS for t in util.read_texts(p, "text")]
     spellings = final_spellings(targets, label_texts)
     drug_lex = set(extract.load_lexicon())
-    fixes = [b.compile_rules(b.load_rules(p)) for p in rule_paths or DEFAULT_RULES]
+    fixes = [b.compile_rules(util.read_jsonl(p)) for p in rule_paths or DEFAULT_RULES]
     rows_out = build_groups(groups, spellings, drug_lex, fixes, min_candidate_count, min_total)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows_out), encoding="utf-8")
+    util.write_jsonl(out, rows_out)
     logger.info(f"wrote {len(rows_out)} groups to {out}")
 
     kinds = Counter(r["kind"] for r in rows_out)
@@ -317,9 +317,8 @@ def main(folders: tuple[Path, ...], out: Path, rule_paths: tuple[Path, ...], lab
         for folder, (_, report, rows) in zip(folders, builds):
             collect_examples(folder, rows, report, wanted, manifests_dir, examples_per_candidate, sink)
         examples_out.parent.mkdir(parents=True, exist_ok=True)
-        with examples_out.open("w", encoding="utf-8") as f:
-            for (hk, _, _), ex in sorted(sink.items(), key=lambda x: (heard_of[x[0][0]], x[0][1], x[0][2])):
-                f.writelines(json.dumps({"heard": heard_of[hk], **e}, ensure_ascii=False) + "\n" for e in ex)
+        ordered = sorted(sink.items(), key=lambda x: (heard_of[x[0][0]], x[0][1], x[0][2]))
+        util.write_jsonl(examples_out, ({"heard": heard_of[hk], **e} for (hk, _, _), ex in ordered for e in ex))
         n_split = Counter(split for (_, _, split), ex in sink.items() for _ in ex)
         logger.info(f"wrote {sum(n_split.values())} example rows to {examples_out} (per split: {dict(n_split)})")
 

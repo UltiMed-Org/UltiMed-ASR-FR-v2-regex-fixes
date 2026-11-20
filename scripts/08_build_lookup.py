@@ -51,12 +51,12 @@ import click
 from loguru import logger
 
 _HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("b", _HERE / "02_build_fix_rules.py")
-b = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(b)
-_mspec = importlib.util.spec_from_file_location("m", _HERE / "03_merge_rules.py")
-m = importlib.util.module_from_spec(_mspec)
-_mspec.loader.exec_module(m)
+# _util.py is loaded by path, not imported: see its docstring.
+_uspec = importlib.util.spec_from_file_location("ultimed_util", _HERE / "_util.py")
+util = importlib.util.module_from_spec(_uspec)
+_uspec.loader.exec_module(util)
+b = util.load_script("b", "02_build_fix_rules.py")
+m = util.load_script("m", "03_merge_rules.py")
 
 DEFAULT_DIR = _HERE.parent / "lookup"
 # Every code point but the surrogates, which no decoded text holds: matched once per
