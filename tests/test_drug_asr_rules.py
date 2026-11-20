@@ -138,6 +138,27 @@ def test_build_manual_rules() -> None:
     _run_doctests("05_build_manual_rules.py")
 
 
+def test_owner_spellings_20261120() -> None:
+    """The headwords unified in the labels on 2026-11-20 are fixed in a model's output too
+    (manual_fixes.tsv), while the right spellings and the English peroxisome stay."""
+    mod = load_script("05_build_manual_rules.py")
+    tsv = mod.INPUTS / "manual_fixes.tsv"
+    fix = mod.b.compile_rules(mod.build_manual_rules(tsv.read_text(encoding="utf-8").splitlines()))
+    cases = {
+        "une tumeur bégnine de la veine de Cokett": "une tumeur bénigne de la veine de Cockett",
+        "Cholestyramine et méthyle aminolévulinate": "Colestyramine et méthyl aminolévulinate",
+        "réaction de Sanarelli-Schwartzman, bourse de Thornwaldt": "réaction de Sanarelli-Shwartzman, bourse de Tornwaldt",
+        "l'idradénome médulaire en injection souscutanée": "l'hidradénome médullaire en injection sous-cutanée",
+        "Pneumocystis jiroveci, lipocalycine": "Pneumocystis jirovecii, lipocaline",
+        "la tache de Soemmering": "la tache de Sömmerring",
+    }
+    for heard, want in cases.items():
+        assert fix(heard) == want, (heard, fix(heard))
+        assert fix(want) == want, want
+    kept = "peroxisome proliferator-activated receptor, hidradénome, Pneumocystis jirovecii, diamètre"
+    assert fix(kept) == kept
+
+
 def test_apply_resolutions() -> None:
     _run_doctests("09_apply_resolutions.py")
 

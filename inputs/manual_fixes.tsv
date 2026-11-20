@@ -25,3 +25,47 @@ riobrancho-dilaté	Rio Branco dilaté
 riobrancho-dilatée	Rio Branco dilatée
 riobrancho-dilatés	Rio Branco dilatés
 riobrancho-dilatées	Rio Branco dilatées
+# 2026-11-20, owner: misspelled dictionary headwords unified in the labels (label_conventions' OWNER_SPELLING_20261120
+# and the re-synthesized typos); a model trained on the older labels still writes the old form. A hyphenated compound
+# needs its own line (the bounds refuse a hyphen on either side). peroxisome stays (English in the labels).
+cokett	Cockett
+abrikossof	Abrikossoff
+rosenmüler	Rosenmüller
+grynfelt	Grynfeltt
+lachapèle	Lachapelle
+schwartzman	Shwartzman
+sanarelli-schwartzman	Sanarelli-Shwartzman
+kußmaul	Kussmaul
+kußmaul-maier	Kussmaul-Maier
+thornwaldt	Tornwaldt
+idradénome	hidradénome
+idradénomes	hidradénomes
+hydrocystome	hidrocystome
+hydrocystomes	hidrocystomes
+médulaire	médullaire
+médulaires	médullaires
+souscutanée	sous-cutanée
+souscutanées	sous-cutanées
+falsiforme	falciforme
+falsiformes	falciformes
+correctopie	corectopie
+callidine	kallidine
+karyophérine	caryophérine
+karyophérines	caryophérines
+cholestyramine	colestyramine
+méthyle aminolévulinate	méthyl aminolévulinate
+bégnine	bénigne
+bégnines	bénignes
+pléiomorphe	pléomorphe
+pléiomorphes	pléomorphes
+lipocalicine	lipocaline
+lipocalycine	lipocaline
+damètre	diamètre
+dystropnie	dystrophie
+déferrioxamine	desferrioxamine
+castelman	Castleman
+jiroveci	jirovecii
+soemmering	Sömmerring
+soemmerring	Sömmerring
+jadassohn-levandovsky	Jadassohn-Lewandowsky
+gangraenosum	gangrenosum
