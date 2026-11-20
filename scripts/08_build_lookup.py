@@ -43,6 +43,7 @@ import importlib.util
 import json
 import re
 import sys
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
@@ -61,6 +62,13 @@ DEFAULT_DIR = _HERE.parent / "lookup"
 # Every code point but the surrogates, which no decoded text holds: matched once per
 # character class to learn what re.IGNORECASE really lets through.
 _ALL = "".join(chr(c) for c in range(sys.maxunicode + 1) if not 0xD800 <= c <= 0xDFFF)
+# What IGNORECASE adds depends on the interpreter's Unicode database: Python 3.14
+# (Unicode 16) assigned U+A7DC, the capital of U+019B, so [_WORD] gained it there and the
+# lookup files stopped being reproducible across versions. Unicode never makes two existing
+# characters a new case pair, so the drift only ever comes from newly assigned code points:
+# taking the case-insensitive extras from the frozen Unicode 3.2 table that every Python
+# ships makes the spec the same on all of them.
+_OLD = "".join(c for c in _ALL if unicodedata.ucd_3_2_0.category(c) != "Cn")
 _ELISION = "dlnjmtsc"  # the letters of 02's _START elision class
 _APOSTROPHES = "'’"
 
@@ -68,8 +76,14 @@ _APOSTROPHES = "'’"
 @lru_cache(maxsize=None)
 def _matching(pattern: str) -> frozenset[str]:
     """Every character ``pattern`` (one character class) matches, case-insensitively
-    (cached: one scan of all of Unicode per class)."""
-    return frozenset(re.findall(pattern, _ALL, re.IGNORECASE))
+    (cached: one scan of all of Unicode per class). Case-insensitive extras are only
+    looked for among the code points of Unicode 3.2 (see ``_OLD``), so the result does not
+    depend on the Python version.
+
+    >>> [hex(c) for c in sorted(map(ord, _matching("[k]")))], "\\ua7dc" in _matching("[\\u019b]")
+    (['0x4b', '0x6b', '0x212a'], False)
+    """
+    return frozenset(re.findall(pattern, _ALL)) | frozenset(re.findall(pattern, _OLD, re.IGNORECASE))
 
 
 def _ranges(chars: set[str]) -> list[list[int]]:

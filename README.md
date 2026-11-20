@@ -86,7 +86,7 @@ The patterns need lookbehind (word bounds, French elisions, the title guard), wh
   ...]}
 ```
 
-`spec` spells out every character set the patterns relied on, computed by asking Python's `re` itself, so the consumer needs no Unicode tables: `word_chars` is a list of inclusive code point ranges, `case_map` folds case the way `re.IGNORECASE` does (46 entries, all Latin except the Kelvin sign), `accent_map` folds only the accents the rule classes list (so `é` becomes `e` but `ã` stays `ã`, because the patterns write `a` as `[aàâä]`).
+`spec` spells out every character set the patterns relied on, computed by asking Python's `re` itself (case-insensitive extras only among the code points of Unicode 3.2, so the file is the same whatever Python builds it; see `scripts/README.md`), so the consumer needs no Unicode tables: `word_chars` is a list of inclusive code point ranges, `case_map` folds case the way `re.IGNORECASE` does (46 entries, all Latin except the Kelvin sign), `accent_map` folds only the accents the rule classes list (so `é` becomes `e` but `ã` stays `ã`, because the patterns write `a` as `[aàâä]`).
 
 A key is a variant folded the way the regex matched it: each text character goes through `case_map` then `accent_map`, one run of `separators` (whitespace and hyphens) between two words is one space, and an apostrophe (`'` or `’`) is `'` and may be followed in the text by whitespace the key does not show. For example, the texts `Myrtazapine`, `mire-tazapine` and `mire  tazapine` all fold to a key of the first rule above, and `d’ hexaméthasone` folds to `d'hexamethasone`.
 
