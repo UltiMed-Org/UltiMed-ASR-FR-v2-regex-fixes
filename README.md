@@ -1,10 +1,15 @@
 # UltiMed-ASR-FR-v2-regex-fixes
 
+> [!WARNING]
+> **Release in progress.** UltiMed v2 is being released right now. As long as this notice is here, files, links and numbers in this repository are still being changed.
+
+Part of [UltiMed-Org](https://github.com/UltiMed-Org), which lists every UltiMed repository, dataset and model.
+
 Cheap post-processing for French medical ASR: lists of rules that rewrite the misspellings the [UltiMed parakeet model](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-UltiMed-onnx) still makes on French medical vocabulary into the right word, for example `veine la faxine` becomes `venlafaxine`. Plain text substitution after decoding: no GPU, no extra model. They also help models that were not finetuned.
 
 Each rule list ships in two equivalent forms: regexes (`rules/`) and lookup tables (`lookup/`), for apps whose regex engine has no lookbehind. Both give the same output on every text (see "Equivalence" below).
 
-This repository, its scripts and its docs were written with Claude Code. The rules and their build history moved here on 2026-11-15 from the model repository (`regex-fixes/`) and from `08_drug_asr_rules/` of [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts).
+This repository, its scripts and its docs were written with Claude Code. The rules and their build history moved here on 2026-11-15 from the model repository (`regex-fixes/`) and from `08_drug_asr_rules/` of [UltiMed-ASR-FR-v2-scripts](https://github.com/UltiMed-Org/UltiMed-ASR-FR-v2-scripts).
 
 License: AGPL-3.0-or-later for everything in this repository (rules, lookup tables, scripts, tests), see `LICENSE`. The build scripts were first published in UltiMed-ASR-FR-v1-scripts under Apache-2.0 and the v1 rule files in the model repository under CC BY 4.0; those earlier copies keep their original license, this repository is the same author's relicensed continuation.
 
@@ -56,7 +61,7 @@ TODO: real speech. No v2 transcripts of FLEURS-fr, Common Voice fr or the author
 | `scripts/` | the build chain (01 to 07 and 09, plus 10 for the confusion groups, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
 | `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
 
-The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts) checkout. By default they look for it next to this repository; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
+The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v2-scripts](https://github.com/UltiMed-Org/UltiMed-ASR-FR-v2-scripts) checkout. By default they look for it next to this repository, in a folder still named `UltiMed-ASR-FR-v1-scripts`; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
 
 ## Regex form (`rules/*.jsonl`)
 
@@ -140,4 +145,4 @@ uv run tests/test_lookup.py
 cd tests && uv run --with click --with loguru --with litellm --with tiktoken --with tqdm --with tenacity --with rapidfuzz --with wordfreq test_drug_asr_rules.py
 ```
 
-`test_drug_asr_rules.py` skips the two checks that need the UltiMed-ASR-FR-v1-scripts checkout when it is missing.
+`test_drug_asr_rules.py` skips the two checks that need the UltiMed-ASR-FR-v2-scripts checkout when it is missing.

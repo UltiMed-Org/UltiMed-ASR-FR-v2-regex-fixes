@@ -1,6 +1,6 @@
 # Build scripts: regex fixes for words the ASR model misspells
 
-This is the build history of the rule files, moved here from `08_drug_asr_rules/` of [UltiMed-ASR-FR-v1-scripts](https://github.com/thiswillbeyourgithub/UltiMed-ASR-FR-v1-scripts) on 2026-11-15. Paths below are relative to the root of this repo: the scripts are in `scripts/`, the v2 rule files in `rules/` (their rejected lists and `drug_asr_errors.json` go to `rejected/`, which is gitignored: they hold fragments of dataset transcripts and nothing reads them), the hand-written TSVs in `inputs/`, and the v1 outputs (`drug_fix_rules.jsonl`, `term_fix_rules.jsonl`, the `drug_asr_errors*.json` files) in `v1/`. Paths starting with `99_hf_release/` or `01_dictionnary/` are inside a UltiMed-ASR-FR-v1-scripts checkout, which the scripts expect next to this repo or at `$ULTIMED_SCRIPTS_DIR`. `08_build_lookup.py` (the lookup-table form of the rules) is new here and described in the top-level README.
+This is the build history of the rule files, moved here from `08_drug_asr_rules/` of [UltiMed-ASR-FR-v2-scripts](https://github.com/UltiMed-Org/UltiMed-ASR-FR-v2-scripts) on 2026-11-15. Paths below are relative to the root of this repo: the scripts are in `scripts/`, the v2 rule files in `rules/` (their rejected lists and `drug_asr_errors.json` go to `rejected/`, which is gitignored: they hold fragments of dataset transcripts and nothing reads them), the hand-written TSVs in `inputs/`, and the v1 outputs (`drug_fix_rules.jsonl`, `term_fix_rules.jsonl`, the `drug_asr_errors*.json` files) in `v1/`. Paths starting with `99_hf_release/` or `01_dictionnary/` are inside a UltiMed-ASR-FR-v2-scripts checkout, which the scripts expect next to this repo (in a folder still named `UltiMed-ASR-FR-v1-scripts`) or at `$ULTIMED_SCRIPTS_DIR`. `08_build_lookup.py` (the lookup-table form of the rules) is new here and described in the top-level README.
 
 Goal: transcribe every clip of the UltiMed `drugs` subset with the fine-tuned Parakeet, collect how each drug name gets misspelled (`"mirtazapine": {"myrtazapine": 15, "mire tazapine": 6}`), and turn that into an ordered list of regex rules that fix drug names in ASR output while rarely overcorrecting.
 
@@ -8,7 +8,7 @@ Written with Claude Code.
 
 ## 1. Transcribe (NeMo repo, GPU)
 
-Run it after training, when the GPU is free: the trainer uses about 22 GB of the 24 GB card, and CPU inference takes about 3.5 s per clip in fp32 (about 21 hours for the 21.9k drug clips). From the NeMo repo root (`UltiMed-ASR-FR-v1-NeMo_training_scripts`):
+Run it after training, when the GPU is free: the trainer uses about 22 GB of the 24 GB card, and CPU inference takes about 3.5 s per clip in fp32 (about 21 hours for the 21.9k drug clips). From the NeMo repo root (`UltiMed-ASR-FR-v2-NeMo_training_scripts`):
 
 ```bash
 BS=16 ./.venv/bin/python perso/transcribe_manifests.py <final.ckpt or .nemo> drugs_hyps.jsonl \
