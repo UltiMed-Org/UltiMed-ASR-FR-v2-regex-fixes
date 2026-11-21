@@ -5,6 +5,9 @@
 
 Part of [UltiMed-Org](https://github.com/UltiMed-Org), which lists every UltiMed repository, dataset and model.
 
+> [!IMPORTANT]
+> **Want faster improvements?** This project is entirely self-funded on my minimum-wage salary, and every training run competes for a single consumer GPU. If you or your organisation can donate an **RTX 5090**, or the money to buy one second-hand, it would directly speed up the next versions of the dataset and the fine-tuned models. Reach out via [olicorne.org](https://olicorne.org) or open an issue on this repository.
+
 Cheap post-processing for French medical ASR: lists of rules that rewrite the misspellings the [UltiMed parakeet model](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-UltiMed-v2-onnx) still makes on French medical vocabulary into the right word, for example `veine la faxine` becomes `venlafaxine`. Plain text substitution after decoding: no GPU, no extra model. They also help models that were not finetuned.
 
 Each rule list ships in two equivalent forms: regexes (`rules/`) and lookup tables (`lookup/`), for apps whose regex engine has no lookbehind. Both give the same output on every text (see "Equivalence" below).
