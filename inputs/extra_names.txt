@@ -1,0 +1,7 @@
+# Surnames heard in real speech that the INSEE name lists (02 --names) miss, one per line.
+# scripts/09_apply_resolutions.py gives every learned rule with one of them as a variant the
+# title guard of 02's guard_names: the rule still fires everywhere else ("os malar" -> "os malaire"),
+# but not right after docteur, Dr, Pr, M., Mme... ("le docteur Malar" stays). Case and accents do not matter.
+# A comment above each name says where it was heard.
+# FLEURS fr, 2026-11-21: "Le docteur Malar" became "Le docteur Malaire" (dictionary rule mallaire|malar -> malaire)
+malar

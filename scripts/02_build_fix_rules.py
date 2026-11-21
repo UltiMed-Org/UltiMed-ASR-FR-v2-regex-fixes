@@ -118,6 +118,8 @@ def guard_names(rules: list[dict], names: set[str]) -> int:
     """Keep the rules whose variant is a name (``fold``-ed, in ``names``) from firing right after a title.
 
     The pattern gets the ``_AFTER_TITLE`` lookbehinds and the rule ``"name": true``; returns how many.
+    A merged rule (03, ``"variants"``) is guarded as a whole when any of its variants is a name, and a
+    rule already guarded is left alone, so 09 can rerun this on finished files (``inputs/extra_names.txt``).
 
     >>> rules = [{"variant": v, "pattern": variant_pattern(v), "replacement": t} for v, t in
     ...          [("mirat", "Humira"), ("myrtazapine", "mirtazapine")]]
@@ -127,10 +129,17 @@ def guard_names(rules: list[dict], names: set[str]) -> int:
     ['le docteur Mirat', 'Mme Mirat', 'Dr. Mirat', 'M. Mirat est venu']
     >>> [apply_rules(t, rules) for t in ("sous mirat depuis mai", "Mirat 40 mg", "du calcium. Mirat le soir")]
     ['sous Humira depuis mai', 'Humira 40 mg', 'du calcium. Humira le soir']
+    >>> merged = {"variants": ["mallaire", "malar"], "replacement": "malaire",
+    ...           "pattern": _START + "(?:" + variant_pattern("mallaire")[len(_START):-len(_END)] + "|"
+    ...                      + variant_pattern("malar")[len(_START):-len(_END)] + ")" + _END}
+    >>> guard_names([merged], {"malar"}), guard_names([merged], {"malar"}), merged["name"]
+    (1, 0, True)
+    >>> merged["pattern"].count(_AFTER_TITLE)
+    1
     """
     n = 0
     for r in rules:
-        if fold(r["variant"]).strip() in names:
+        if not r.get("name") and any(fold(v).strip() in names for v in r.get("variants") or [r["variant"]]):
             r["pattern"], r["name"] = _AFTER_TITLE + r["pattern"], True
             n += 1
     return n

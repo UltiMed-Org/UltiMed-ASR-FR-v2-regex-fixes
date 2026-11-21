@@ -30,10 +30,15 @@
    non-initial occurrences (at least ``RECASE_MIN``): ``Charcot-marie-Tooth`` ->
    ``Charcot-Marie-Tooth``, which the per-word step leaves half done because ``marie`` is
    also a lowercase word. ``--no-recase`` skips both.
+4. Every rule with a variant listed in ``--names`` (default ``inputs/extra_names.txt``, the
+   surnames heard in real speech that the INSEE lists given to 02 ``--names`` miss) gets 02's
+   title guard (``guard_names``, merged rules included): ``le docteur Malar`` stays, ``os malar``
+   still becomes ``os malaire``. A rule already guarded is left alone, so rerunning is harmless.
+   This is the one place the list is applied: 07 calls 09 with the default.
 
 Rules with the same replacement are not re-merged: a merge must be checked on texts (03).
 
-Usage: uv run scripts/09_apply_resolutions.py SRC.jsonl DST.jsonl [--resolutions TSV] [--labels MANIFEST ...] [--no-conventions] [--no-recase]
+Usage: uv run scripts/09_apply_resolutions.py SRC.jsonl DST.jsonl [--resolutions TSV] [--names TXT] [--labels MANIFEST ...] [--no-conventions] [--no-recase]
 (SRC and DST may be the same file). Called by 07_build_dataset_rules.sh after 04.
 This file was written by Claude Code.
 """
@@ -53,11 +58,22 @@ _uspec.loader.exec_module(util)
 u = util.load_script("u", "04_drop_unk_variants.py")
 mr = util.load_script("mr", "05_build_manual_rules.py")
 b = u.b  # 04 already loads 02, no third copy of it here
+EXTRA_NAMES = mr.INPUTS / "extra_names.txt"
 
 
 def resolved_patterns(lines) -> set[str]:
     """The ``variant_pattern`` of every variant a resolutions TSV decides."""
     return {b.variant_pattern(row[0]) for row in mr.read_rows(lines)}
+
+
+def read_names(lines) -> set[str]:
+    """The ``fold``-ed names of a names file (one per line, ``#`` comments), as 02 ``--names`` folds them.
+
+    >>> rules = [{"variants": ["mallaire", "malar"], "replacement": "malaire", "pattern": b.variant_pattern("malar")}]
+    >>> b.guard_names(rules, read_names(["# a comment", "Malar"])), rules[0]["name"]
+    (1, True)
+    """
+    return {b.fold(row[0]).strip() for row in mr.read_rows(lines)}
 
 
 def drop_resolved(rules: list[dict], patterns: set[str]) -> tuple[list[dict], int]:
@@ -266,15 +282,20 @@ def recase_to_labels(rules: list[dict], texts: list[str]) -> None:
 @click.argument("src", type=click.Path(exists=True, path_type=Path))
 @click.argument("dst", type=click.Path(path_type=Path))
 @click.option("--resolutions", type=click.Path(exists=True, path_type=Path), default=mr.RESOLUTIONS, show_default=True)
+@click.option("--names", "names_path", type=click.Path(exists=True, path_type=Path), default=EXTRA_NAMES,
+              show_default=True, help="surnames (one per line): their rules do not fire right after a title")
 @click.option("--labels", multiple=True, type=click.Path(exists=True, path_type=Path),
               help="NeMo manifests (text field): keep only the respellings their converted labels back")
 @click.option("--no-conventions", is_flag=True, help="do not respell the replacements")
 @click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing (words and whole phrases)")
-def main(src: Path, dst: Path, resolutions: Path, labels: tuple[Path, ...], no_conventions: bool, no_recase: bool) -> None:
+def main(src: Path, dst: Path, resolutions: Path, names_path: Path, labels: tuple[Path, ...], no_conventions: bool,
+         no_recase: bool) -> None:
     rules = util.read_jsonl(src)
     n0 = len(rules)
     rules, dropped = drop_resolved(rules, resolved_patterns(resolutions.read_text(encoding="utf-8").splitlines()))
     logger.info(f"{src.name}: dropped {dropped} resolved variants, {n0} -> {len(rules)} rules")
+    guarded = b.guard_names(rules, read_names(names_path.read_text(encoding="utf-8").splitlines()))
+    logger.info(f"{guarded} more rules kept from firing after a title ({names_path.name})")
     texts = [t for mf in labels for t in util.read_texts(mf, "text")] if labels else None
     if not no_conventions:
         changed, refused = apply_conventions(rules, texts)

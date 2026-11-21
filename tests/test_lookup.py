@@ -22,6 +22,8 @@ output of the regex rules (``rules/``, 02_build_fix_rules.py ``apply_rules``).
   ``.jsonl`` (field ``hyp``) or a ``.txt`` (one text per line) to run real transcripts
   instead, against all six rule files, e.g. the 602k-clip whole-corpus transcription;
   ``ULTIMED_LOOKUP_LIMIT=N`` keeps the first N texts.
+- ``test_extra_names``: the surnames of ``inputs/extra_names.txt`` survive a title in the
+  committed files, regex and lookup alike, and their rules still fire elsewhere.
 - ``test_concatenation``: the six files in order give the same output as one list made of
   them concatenated, regex and lookup alike (why no merged file ships, see the README).
 
@@ -344,17 +346,34 @@ def test_resolutions() -> None:
     ``antibial`` and ``glissonne``/``glissone``/``glison`` depend on the next word (``before:WORDS``).
     ``étuximab`` depends on the previous word's suffix, which no context can test, so the
     tsv lists the previous words instead."""
+    _check_committed("resolutions", RESOLVED)
+
+
+def _check_committed(label: str, cases) -> None:
+    """Fail unless every ``(text, want)`` of ``cases`` gives ``want`` through the six committed
+    files in order, in regex form and in lookup form."""
     fixes = [b.compile_rules(_rules(n)) for n in FILES]
     lks = [apply.Lookup.load(REPO / "lookup" / f"{n}_fix_rules.lookup.json") for n in FILES]
     bad = []
-    for text, want in RESOLVED:
+    for text, want in cases:
         got, via = text, text
         for f, lk in zip(fixes, lks):
             got, via = f(got), lk.fix(via)
         if got != want or via != want:
             bad.append((text, want, got, via))
-    print(f"resolutions: {len(RESOLVED)} sentences, {len(bad)} wrong")
+    print(f"{label}: {len(cases)} sentences, {len(bad)} wrong")
     assert not bad, bad
+
+
+def test_extra_names() -> None:
+    """The surnames of inputs/extra_names.txt keep their spelling after a title in the committed
+    files (09 gave their rules 02's title guard), and the rules still fire everywhere else.
+    ``Malar`` was rewritten ``Malaire`` on FLEURS-fr (``Le docteur Malar``)."""
+    _check_committed("extra names", [
+        ("Le docteur Malar a vu le patient", "Le docteur Malar a vu le patient"),
+        ("Dr Malar", "Dr Malar"), ("Mme Malar est venue", "Mme Malar est venue"),
+        ("fracture de l'os malar", "fracture de l'os malaire"), ("le malar droit", "le malaire droit"),
+    ])
 
 
 def test_concatenation() -> None:
@@ -390,4 +409,5 @@ if __name__ == "__main__":
     test_fuzz()
     test_corpus()
     test_resolutions()
+    test_extra_names()
     test_concatenation()
