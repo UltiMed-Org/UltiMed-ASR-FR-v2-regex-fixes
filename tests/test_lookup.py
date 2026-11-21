@@ -22,6 +22,8 @@ output of the regex rules (``rules/``, 02_build_fix_rules.py ``apply_rules``).
   ``.jsonl`` (field ``hyp``) or a ``.txt`` (one text per line) to run real transcripts
   instead, against all six rule files, e.g. the 602k-clip whole-corpus transcription;
   ``ULTIMED_LOOKUP_LIMIT=N`` keeps the first N texts.
+- ``test_concatenation``: the six files in order give the same output as one list made of
+  them concatenated, regex and lookup alike (why no merged file ships, see the README).
 
 Each prints lines, changed lines and mismatches per rule file and fails on any mismatch.
 
@@ -355,6 +357,32 @@ def test_resolutions() -> None:
     assert not bad, bad
 
 
+def test_concatenation() -> None:
+    """The six files applied one after the other give exactly what one list made of them
+    concatenated in that order gives, in regex and in lookup form (README, "One list?").
+
+    It holds by construction (both appliers retry every later rule whose key the new text
+    contains, after each change), so this guards the appliers rather than the rule files:
+    each file's synthetic sentences, fuzz texts of all six and the RESOLVED sentences, which
+    exercise the chains from a learned file into the manual one."""
+    import tempfile
+    per = [_rules(n) for n in FILES]
+    concat = [r for rules in per for r in rules]
+    texts = [t for i, rules in enumerate(per) for t in _carrier_texts(rules, 500, seed=100 + i)]
+    texts += _fuzz_texts(concat, 1000, seed=7) + [t for t, _ in RESOLVED]
+    fixes = [b.compile_rules(rules) for rules in per]
+    lks = [apply.Lookup.load(REPO / "lookup" / f"{n}_fix_rules.lookup.json") for n in FILES]
+    with tempfile.TemporaryDirectory() as d:
+        lk = _lookup_of(concat, Path(d) / "all.json")
+    one, bad = b.compile_rules(concat), 0
+    for t in texts:
+        want, via = t, t
+        for f, l in zip(fixes, lks):
+            want, via = f(want), l.fix(via)
+        bad += not (one(t) == lk.fix(t) == via == want)
+    print(f"concatenation: {len(texts)} lines, {bad} where one list (regex or lookup) differs from six files")
+    assert not bad
+
 if __name__ == "__main__":
     test_doctests()
     test_lookups_current()
@@ -362,3 +390,4 @@ if __name__ == "__main__":
     test_fuzz()
     test_corpus()
     test_resolutions()
+    test_concatenation()
