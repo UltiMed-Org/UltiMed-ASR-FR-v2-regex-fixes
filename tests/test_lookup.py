@@ -376,6 +376,21 @@ def test_extra_names() -> None:
     ])
 
 
+def test_diffu_k() -> None:
+    """Diffu-K is the only spelling of the potassium brand (owner, 2026-11-22): no rule of any file
+    writes Diffuk, DiffuK or Diffu K, and the six files in order respell those (manual file, LAST)
+    while leaving Diffu-K itself alone. ``diéfuca`` was learned by v1 as ``Diffu``, K left out."""
+    import re
+    bad = [(n, r["replacement"]) for n in FILES for r in _rules(n)
+           if re.search(r"diffu(?:k|\s+k)\b", r["replacement"], re.IGNORECASE)]
+    assert not bad, bad
+    _check_committed("Diffu-K", [
+        ("sous DiffuK 600 mg", "sous Diffu-K 600 mg"), ("sous Diffuk", "sous Diffu-K"),
+        ("arrêt du Diffu K", "arrêt du Diffu-K"), ("sous Diffu-K 600 mg", "sous Diffu-K 600 mg"),
+        ("sous diéfuca", "sous Diffu-K"),
+    ])
+
+
 def test_concatenation() -> None:
     """The six files applied one after the other give exactly what one list made of them
     concatenated in that order gives, in regex and in lookup form (README, "One list?").
@@ -410,4 +425,5 @@ if __name__ == "__main__":
     test_corpus()
     test_resolutions()
     test_extra_names()
+    test_diffu_k()
     test_concatenation()

@@ -90,3 +90,8 @@ nitro imidazolé	*
 d'ostéogénèse imparfaite	d'ostéogenèse imparfaite
 l'ostéogénèse imparfaite	l'ostéogenèse imparfaite
 ostéogénèse imparfaite	ostéogenèse imparfaite
+# 2026-11-22, owner: Diffuk, DiffuK and Diffu K do not exist, the only spelling is Diffu-K. The manual file runs
+# LAST, so these lines also respell whatever a learned or imported (v1) rule writes ("diffu k" also matches
+# Diffu-K itself, which it leaves as it is).
+diffuk	Diffu-K
+diffu k	Diffu-K
