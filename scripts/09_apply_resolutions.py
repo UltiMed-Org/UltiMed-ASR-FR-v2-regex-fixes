@@ -278,6 +278,30 @@ def recase_to_labels(rules: list[dict], texts: list[str]) -> None:
     logger.info(f"{len(changed)} replacements recased to the labels' whole-phrase casing: {sorted(set(changed))[:20]}")
 
 
+def resolve(rules: list[dict], resolution_lines, name_lines, texts: list[str] | None, conventions: bool = True,
+            recase_rules: bool = True, name: str = "rules") -> list[dict]:
+    """Every step of this script on ``rules``, in order; returns the new list (rules are also edited in place).
+
+    1. drop the variants ``resolution_lines`` (``inputs/conflict_resolutions.tsv``) decides, 2. title guard for the
+    rules with a variant in ``name_lines`` (``inputs/extra_names.txt``), 3. label conventions (``conventions``,
+    label-backed when ``texts`` is given), 4. recasing to the labels (``recase_rules``, only with ``texts``).
+    ``main`` runs it on one file; ``11_import_v1_rules.py`` runs it on the v1 rules it imports, so both get the
+    exact same respelling passes. ``name`` only labels the log lines.
+    """
+    n0 = len(rules)
+    rules, dropped = drop_resolved(rules, resolved_patterns(resolution_lines))
+    logger.info(f"{name}: dropped {dropped} resolved variants, {n0} -> {len(rules)} rules")
+    guarded = b.guard_names(rules, read_names(name_lines))
+    logger.info(f"{guarded} more rules kept from firing after a title (extra names)")
+    if conventions:
+        changed, refused = apply_conventions(rules, texts)
+        logger.info(f"{len(changed)} replacements respelled by the label conventions: {sorted(set(changed))[:20]}")
+        logger.info(f"{len(refused)} respellings refused, the labels do not back them: {refused[:20]}")
+    if texts is not None and recase_rules:
+        recase_to_labels(rules, texts)
+    return rules
+
+
 @click.command()
 @click.argument("src", type=click.Path(exists=True, path_type=Path))
 @click.argument("dst", type=click.Path(path_type=Path))
@@ -290,19 +314,10 @@ def recase_to_labels(rules: list[dict], texts: list[str]) -> None:
 @click.option("--no-recase", is_flag=True, help="do not recase the replacements to the labels' casing (words and whole phrases)")
 def main(src: Path, dst: Path, resolutions: Path, names_path: Path, labels: tuple[Path, ...], no_conventions: bool,
          no_recase: bool) -> None:
-    rules = util.read_jsonl(src)
-    n0 = len(rules)
-    rules, dropped = drop_resolved(rules, resolved_patterns(resolutions.read_text(encoding="utf-8").splitlines()))
-    logger.info(f"{src.name}: dropped {dropped} resolved variants, {n0} -> {len(rules)} rules")
-    guarded = b.guard_names(rules, read_names(names_path.read_text(encoding="utf-8").splitlines()))
-    logger.info(f"{guarded} more rules kept from firing after a title ({names_path.name})")
     texts = [t for mf in labels for t in util.read_texts(mf, "text")] if labels else None
-    if not no_conventions:
-        changed, refused = apply_conventions(rules, texts)
-        logger.info(f"{len(changed)} replacements respelled by the label conventions: {sorted(set(changed))[:20]}")
-        logger.info(f"{len(refused)} respellings refused, the labels do not back them: {refused[:20]}")
-    if texts is not None and not no_recase:
-        recase_to_labels(rules, texts)
+    rules = resolve(util.read_jsonl(src), resolutions.read_text(encoding="utf-8").splitlines(),
+                    names_path.read_text(encoding="utf-8").splitlines(), texts, conventions=not no_conventions,
+                    recase_rules=not no_recase, name=src.name)
     util.write_jsonl(dst, rules)
     logger.info(f"wrote {dst}")
 

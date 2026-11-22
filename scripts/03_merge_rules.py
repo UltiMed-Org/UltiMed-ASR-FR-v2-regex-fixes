@@ -53,6 +53,17 @@ def merge_rules(rules: list[dict], keep: set[int] = frozenset()) -> list[tuple[l
     'Mirtazapine puis mirtazapine, Primpéran'
     >>> [ix for ix, _ in merge_rules(rules, keep={0})]
     [[0], [1], [2]]
+
+    A member may itself be a merged rule (``"variants"``): its alternation is spliced in flat, so the
+    result is byte for byte what merging the single rules would give (08 rebuilds patterns that way).
+    ``11_import_v1_rules.py`` relies on it to merge imported variants into the committed merged rules:
+
+    >>> again = merge_rules([merged[0][1], {"variant": "mirtazapinne", "pattern": b.variant_pattern("mirtazapinne"),
+    ...                                     "replacement": "mirtazapine"}])
+    >>> flat = merge_rules(rules[:1] + rules[2:] + [{"variant": "mirtazapinne", "replacement": "mirtazapine",
+    ...                                               "pattern": b.variant_pattern("mirtazapinne")}])
+    >>> again[0][1]["variants"], again[0][1]["pattern"] == flat[0][1]["pattern"]
+    (['mire taz apine', 'myrtazapine', 'mirtazapinne'], True)
     """
     groups: dict[tuple, list[int]] = {}
     for i, r in enumerate(rules):
@@ -66,9 +77,16 @@ def merge_rules(rules: list[dict], keep: set[int] = frozenset()) -> list[tuple[l
         for i in ix:
             p, pre = rules[i]["pattern"], _prefix(rules[i])
             assert p.startswith(pre) and p.endswith(b._END), rules[i]
-            bodies.append(p[len(pre):-len(b._END)])
+            body = p[len(pre):-len(b._END)]
+            # Already merged: drop its own (?:...) so the alternation stays flat. A merged rule 04 left with one
+            # variant has no group (04 writes it like an unmerged one), so it is taken as is.
+            if len(rules[i].get("variants") or ()) > 1:
+                assert body.startswith("(?:") and body.endswith(")"), rules[i]
+                body = body[3:-1]
+            bodies.append(body)
         rule = {"pattern": _prefix(first) + "(?:" + "|".join(bodies) + ")" + b._END,
-                "replacement": first["replacement"], "variants": [rules[i]["variant"] for i in ix],
+                "replacement": first["replacement"],
+                "variants": [v for i in ix for v in rules[i].get("variants") or [rules[i]["variant"]]],
                 "count": sum(rules[i].get("count", 0) for i in ix)}
         if first.get("name"):
             rule["name"] = True
