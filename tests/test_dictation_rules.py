@@ -3,8 +3,8 @@
 
 Format (inherited from the interhop murmure-regex repo): `id,remplacement,regex,example_pre,
 example_post`, `# === section ===` comment lines and blank lines ignored. In `remplacement`,
-`$N` is group N, `\\n` a newline, and a trailing `\\u` uppercases the next letter. Each rule is
-checked on its own example, and ids must be unique. Stdlib only: ``python
+`$N` is group N and `\\n` a newline (no `\\u`: the apps write it literally). Each rule is
+checked on its own example and on EXTRA_CASES, and ids must be unique. Stdlib only: ``python
 tests/test_dictation_rules.py`` or pytest.
 
 This file was written by Claude Code.
@@ -22,26 +22,35 @@ def load_rules() -> list[dict]:
 
 
 def apply(rule: dict, text: str) -> str:
-    """Apply one rule like the apps do: $N groups, \\n newline, trailing \\u uppercases next letter."""
-    repl = rule["remplacement"].replace("\\n", "\n")
-    upper = repl.endswith("\\u")
-    if upper:
-        repl = repl[:-2]
-    py_repl = re.sub(r"\$(\d+)", r"\\g<\1>", repl)
-    pattern = rule["regex"]
-    flags = 0
+    """Apply one rule like the apps do: $N groups, \\n newline."""
+    repl = re.sub(r"\$(\d+)", r"\\g<\1>", rule["remplacement"].replace("\\n", "\n"))
+    pattern, flags = rule["regex"], 0
     if pattern.startswith("(?i)"):
         pattern, flags = pattern[4:], re.IGNORECASE
-    if not upper:
-        return re.sub(pattern, py_repl, text, flags=flags)
-    out, pos = [], 0
-    for m in re.finditer(pattern, text, flags=flags):
-        out.append(text[pos:m.start()] + m.expand(py_repl))
-        pos = m.end()
-        if pos < len(text):
-            out.append(text[pos].upper())
-            pos += 1
-    return "".join(out) + text[pos:]
+    return re.sub(pattern, repl, text, flags=flags)
+
+
+# Extra (input, expected) cases per rule id, beyond the CSV's own example.
+EXTRA_CASES = {
+    "b8cf1d1d-1380": [("a retour à la ligne : b", "a\nb")],
+    "7516e9dc-ea5e": [("a saute une ligne: b", "a\nb")],
+    "a6f92682-8234": [("a saut de ligne : b", "a\n\nb")],
+    "f5b91b4a-5aad": [("a nouveau-tiret : b", "a- b"), ("a nouveaux tirets. b", "a- b")],
+    "3f1c9a2e-7b4d": [("a nouvel alinéa : b", "a    b"), ("x alignéa. y", "x    y")],
+}
+
+
+def test_no_uppercase_escape() -> None:
+    """Apps do not support \\u and print it (seen: "- \\ubonjour")."""
+    bad = [r["id"] for r in load_rules() if "\\u" in r["remplacement"]]
+    assert not bad, bad
+
+
+def test_extra_cases() -> None:
+    rules = {r["id"]: r for r in load_rules()}
+    bad = [(i, pre, post, apply(rules[i], pre)) for i, cases in EXTRA_CASES.items()
+           for pre, post in cases if apply(rules[i], pre) != post]
+    assert not bad, "\n".join(map(repr, bad))
 
 
 def test_examples() -> None:
@@ -64,4 +73,6 @@ def test_unique_ids() -> None:
 if __name__ == "__main__":
     test_examples()
     test_unique_ids()
+    test_no_uppercase_escape()
+    test_extra_cases()
     print(f"{len(load_rules())} dictation rules ok")
