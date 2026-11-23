@@ -45,7 +45,7 @@ b60760a1-eba9,... ,"(?i)[.,?!;\s]*(?:(?:trois|3)\s+(?:petits?\s+)?points|points?
 cf6dd67c-cc34,. ,"(?i)[.,?!;\s]*points?[.,?!;\s]*",mot point,mot. 
 c5b833e4-f4a0,", ","(?i)[.,?!;\s]*(?:vie?rgul(es?|as?|in)|viandules?|viagnules?)[.,?!;\s]*",motvirgule,"mot, "
 7e95b6bf-5b75,/,(?i)\s*slash\s*, slash ,/
-b8cf1d1d-1380,\n,"(?i)\s*(?:retours?\s+|all(?:er|ez)\s+)?[àa]\s+la\s+lignes?[.,?!;\s]*", à la ligne ,\n
+b8cf1d1d-1380,\n,"(?i)\s*(?:retours?\s+|all(?:er|ez)\s+)?[àa]\s+la\s+lignes?[.,?!;:\s]*", à la ligne ,\n
 7516e9dc-ea5e,\n,"(?i)\s*(?:sautes?|sceau)\sune\slignes?[.,?!;\s]*", saute une ligne ,\n
 a6f92682-8234,\n\n,"(?i)\s*(?:saut|sceau)\sde\slignes?[.,?!;\s]*", saut de ligne ,\n\n
 3f1c9a2e-7b4d,"    $1\u","(?i)[ \t]*(?:nouvel\s+)?alig?n[ée]as?[.,?!;]*[ \t]*([^\w\n]*)","Nouvel alinéa - patrique","    - Patrique"
