@@ -95,3 +95,69 @@ ostéogénèse imparfaite	ostéogenèse imparfaite
 # Diffu-K itself, which it leaves as it is).
 diffuk	Diffu-K
 diffu k	Diffu-K
+# 2026-11-23, owner: hand-found ASR errors (user list of 2026-11-23). Only the ones no current rule fixed; coroner, disney,
+# rain, timmy, edem and "par soir" were left out because they occur in news text, "des cubitus" because it is
+# correct in labels. Replacements follow the labels' spelling (quetiapine, pariétocolique).
+haine s	AINS
+aïe n s	AINS
+aïe ns	AINS
+hd j	HDJ
+ali mazine	alimémazine
+zoopi clone	zopiclone
+lauras et pam	lorazépam
+laura et pam	lorazépam
+benzodies épines	benzodiazépines
+benzodie épines	benzodiazépines
+benzodies épine	benzodiazépine
+benzodie épine	benzodiazépine
+cathy apin	quetiapine
+cathyapin	quetiapine
+cathy apins	quetiapine
+cathy à pin	quetiapine
+cathy à pins	quetiapine
+le longzépine	l'olanzapine
+le longsépine	l'olanzapine
+à uriginosa	aeruginosa
+a graphage	agrafage
+angéoplasti	angioplastie
+antihistéminique	antihistaminique
+antihistéminiques	antihistaminiques
+onxiolyse	anxiolyse
+unses	anses
+collon	côlon
+copro culture	coproculture
+copro cultures	coprocultures
+dis l'épidémie	dyslipidémie
+10 l'épidémie	dyslipidémie
+eukoli	E. coli
+oeu koli	E. coli
+h t a	HTA
+émoculture	hémoculture
+hyperphygique	hyperphagique
+un curique	incurique
+litavale	lit d'aval
+monokryl	Monocryl
+moralba	moral bas
+normalcard	normocarde
+normocard	normocarde
+normcard	normocarde
+normal card	normocarde
+norm card	normocarde
+oraillette	oreillette
+oraillettes	oreillettes
+parié étocolique	pariétocolique
+p i h	PIH
+p t h	PTH
+seuvrer	sevrer
+taquipsi	tachypsychie
+tricuspeed	tricuspide
+épi plombs	épiploons
+hyper aurexie	hyperorexie
+hyperaurexie	hyperorexie
+et domadaire	hebdomadaire
+excès hyper phagie	accès hyperphagique
+gastro-entérogue	gastro-entérologue
+pasiente	patiente
+à motivationnel	amotivationnel
+6 besoins	si besoin
+6 besoin	si besoin

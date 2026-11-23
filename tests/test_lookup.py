@@ -391,6 +391,22 @@ def test_diffu_k() -> None:
     ])
 
 
+def test_user_rules_2026_11_23() -> None:
+    """Hand-found ASR errors added on 2026-11-23 (manual file): a sample of them fire through the six
+    files in order, and the everyday sentences that share their words are left alone."""
+    _check_committed("user rules 2026-11-23", [
+        ("traité par haine S", "traité par AINS"), ("sous lauras et pam le soir", "sous lorazépam le soir"),
+        ("sous cathy apin 50 mg", "sous quetiapine 50 mg"), ("sous le longzépine", "sous l'olanzapine"),
+        ("Pseudomonas à uriginosa", "Pseudomonas aeruginosa"), ("une colite du collon", "une colite du côlon"),
+        ("pas de dis l'épidémie connue", "pas de dyslipidémie connue"), ("eukoli", "E. coli"),
+        ("patient normal card", "patient normocarde"), ("paracétamol 6 besoins", "paracétamol si besoin"),
+        ("suivi en hd j", "suivi en HDJ"), ("un patient un curique", "un patient incurique"),
+        ("une haine sourde", "une haine sourde"), ("Cathy a pris le train", "Cathy a pris le train"),
+        ("il a dit l'épidémie est finie", "il a dit l'épidémie est finie"),
+        ("les besoins de 6 personnes", "les besoins de 6 personnes"), ("le moral bas", "le moral bas"),
+    ])
+
+
 def test_concatenation() -> None:
     """The six files applied one after the other give exactly what one list made of them
     concatenated in that order gives, in regex and in lookup form (README, "One list?").
@@ -426,4 +442,5 @@ if __name__ == "__main__":
     test_resolutions()
     test_extra_names()
     test_diffu_k()
+    test_user_rules_2026_11_23()
     test_concatenation()
