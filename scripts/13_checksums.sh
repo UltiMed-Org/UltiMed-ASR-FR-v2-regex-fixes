@@ -7,5 +7,5 @@
 # Written by Claude Code.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-LC_ALL=C sha256sum rules/*.jsonl lookup/*.json > SHA256SUMS
+LC_ALL=C sha256sum rules/*.jsonl rules/*.csv lookup/*.json > SHA256SUMS
 echo "SHA256SUMS: $(wc -l < SHA256SUMS) files"

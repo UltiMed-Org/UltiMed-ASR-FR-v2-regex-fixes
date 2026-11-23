@@ -26,7 +26,7 @@ def test_sha256sums_up_to_date() -> None:
     listed = _listed()
     published = sorted(
         str(p.relative_to(ROOT))
-        for p in [*ROOT.glob("rules/*.jsonl"), *ROOT.glob("lookup/*.json")]
+        for p in [*ROOT.glob("rules/*.jsonl"), *ROOT.glob("rules/*.csv"), *ROOT.glob("lookup/*.json")]
     )
     assert sorted(listed) == published, "file list differs: run scripts/13_checksums.sh"
     for path in published:

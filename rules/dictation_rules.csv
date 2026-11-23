@@ -1,0 +1,70 @@
+id,remplacement,regex,example_pre,example_post
+# === constante ===
+
+192c715c-d03c,$1 mg/kg/j,\b(\d+)\s?mg\s?par\s?kilo\s?par\s?jour\b,15 mg par kilo par jour,15 mg/kg/j
+e429d902-bb6d,%,pourcent,50 pourcent,50 %
+f6dd007f-512d,bpm,(?i)battements?\s+par\s+minute,battements par minute,bpm
+bf5daddb-9f3c,cp,\bcomprim[eé]s?\b,2 comprimés,2 cp
+fffca02a-719c,FC $2 bpm,"\b(pouls|fr[eé]quence\s+cardiaque)\s+(\d{2,3})\b","pouls 75",FC 75 bpm
+72602f70-9bb6,g,\bgrammes?\b,cinq grammes,cinq g
+7b53afc1-8532,l/min,(?i)litres?\s+par\s+minute,litres par minute,l/min
+522b2905-e8c2,m2,mètre carré,mètre carré,m2
+96b15e4f-85b4,matin/midi/soir,\bmatin\s+midi\s+et\s+soir\b,matin midi et soir,matin/midi/soir
+ff66fe3b-ecd5,mg,\bmilligrammes?\b,un milligramme,un mg
+b4e76449-6dd1,mL,\bmillilitres?\b,dix millilitres,dix mL
+b6d56d1c-3c30,µg,\bmicrogrammes?\b,un microgramme,un µg
+30e55207-0914,mmHg,mm de mercure.,mm de mercure.,mmHg
+06d75c31-d1ec,SpO2 $1%,"\b(?:saturation|sat)\s+(\d{2,3})\b",saturation 98,SpO2 98%
+ed823169-bf6c,TA : $1/$2,"\b(?:tension|TA)\s+(\d{2,3})\s+(\d{2,3})\b",tension 120 80,TA : 120/80
+c2014990-6290,"T° $1,$2",\btemp[eé]rature\s+(\d{2})\s+(\d)\b,temperature 38 2,"T° 38,2"
+a2b47e89-1f88,UI,\bunit[eé]s?\s?internationales?\b,unités internationales,UI
+fdd0414a-548f,/j,\s*foi[es]\s+par\s+jours?,3 fois par jour,3/j
+4e03c3e8-e4fb,/sem,\s*foi[es]\s+par\s+semaines?,3 fois par semaine,3/sem
+a69c03fe-85bf,/h,\s*foi[es]\s+par\s+heures?,3 fois par heure,3/h
+e1dcc1e8-79fa,/mois,\s*foi[es]\s+par\s+mois?,3 fois par mois,3/mois
+cf7c658b-8cac,/an,\s*foi[es]\s+par\s+ans?,3 fois par ans,3/an
+
+# === ponctuation ===
+
+9ed046ca-d586,"""","(?i)[.,?!;]*ouvr(ir|es?|ez|er|é|ée|és|ées|ais|ait)(?:les?|[.,?!;\s])+guill(em)?ets?[.,?!;\s]*",ouvrez les guillemets ,""""
+bdb72b0f-f2b0,"""","(?i)[.,?!;\s]*ferm(e|es|ez|er|é|ée|és|ées|ais|ait)(?:les?|[.,?!;\s])+guill(em)?ets?[.,?!;]*",fermez les guillemets ,""" "
+caedf8d8-efce,"""","(?i)[.,?!;]*début(?:des?|[.,?!;\s])+citations?[.,?!;\s]*",début des citations ,""""
+4ceb9108-c850,"""","(?i)[.,?!;\s]*fin(?:des?|[.,?!;\s])+citations?",fin des citations,""""
+09e14bb1-6500, (,"(?i)[.,?!;\s]+ouvr(ir|es?|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;\s]*",mot ouvrez la parenthèse ,mot (
+80602648-e022,(,"(?i)^ouvr(ir|es?|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;\s]*",ouvrez la parenthèse ,(
+cf5f2423-ad6e,),"(?i)[.,?!;\s]*ferm(e|es|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;]*",fermez la parenthèse ,) 
+03239c0b-eb86,#,(?i)(dièses?|hashtag)-?,dièse ,# 
+f5b91b4a-5aad,- ,"(?i)[.,?!;\s]*nouveaux?\s+tir(?:ets?|ée?s?|er)[.,?!;\s]*",nouveaux tiret,- 
+e4b20116-c9cb,-,"(?i)[.,?!;\s]*(traits?|très)\s+d'union[.,?!;\s]*",trait d'union,-
+8e62aa31-1ef9, : ,"(?i)(?:^|[.,?!;\s]+)(deux|2)(\s*poin(ts|t|g|gs)|\.)[.,?!;\s]*",deux points, : 
+c41ef761-eec1, ; ,"(?i)[.,?!;\s]*points?[-\s]+virgules?[.,?!;\s]*",point virgule, ; 
+837c3634-31cb, ? ,"(?i)[.,?!;\s]*points?\s+d'interrogations?[.,?!;\s]*",mot point d'interrogation ,mot ? 
+aafac7ee-9e2e, ! ,"(?i)[.,?!;\s]*points?\s+d'exclamations?[.,?!;\s]*",mot point d'exclamation,mot ! 
+034e39ea-443e,. ,"(?i)[.,?!;\s]*points?\s+finals?[.,?!;\s]*",point final,. 
+b60760a1-eba9,... ,"(?i)[.,?!;\s]*(?:(?:trois|3)\s+(?:petits?\s+)?points|points?\s+de\s+suspensions?)[.,?!;\s]*",trois points,... 
+cf6dd67c-cc34,. ,"(?i)[.,?!;\s]*points?[.,?!;\s]*",mot point,mot. 
+9df292e6-03ad,"Recherche de point d'appel infectieux
+
+-Pulmonaire : auscultation claire, pas de toux pas de crachat, radiopulmonaire sans foyer parenchymateux
+-Urinaire : pas de signe fonctionnel, bandelette urinaire normale
+-Cutané : pas de rash, pas d'éruption, pas d'érésipèle retrouvé sur le corps
+-Abdominal : pas de vomissement, pas de diarrhée, abdomen reste souple et dépressible, pas d'ictère
+-Méningé : pas de raideur de nuque, pas de purpura, pas de trouble de la conscience
+-Cardio vasculaire : pas de nouveau souffle à l'auscultation cardiaque
+-ORL : pas de pharyngite pas d'angine pas de rhinite, absence d'otalgie
+","(?i)[.,?!;\s]*ajoute\s+la\s+commande\s+examen\s+infectieux[.,?!;\s]*",Ajoute la commande examen infectieux.,"Recherche de point d'appel infectieux
+
+-Pulmonaire : auscultation claire, pas de toux pas de crachat, radiopulmonaire sans foyer parenchymateux
+-Urinaire : pas de signe fonctionnel, bandelette urinaire normale
+-Cutané : pas de rash, pas d'éruption, pas d'érésipèle retrouvé sur le corps
+-Abdominal : pas de vomissement, pas de diarrhée, abdomen reste souple et dépressible, pas d'ictère
+-Méningé : pas de raideur de nuque, pas de purpura, pas de trouble de la conscience
+-Cardio vasculaire : pas de nouveau souffle à l'auscultation cardiaque
+-ORL : pas de pharyngite pas d'angine pas de rhinite, absence d'otalgie
+"
+c5b833e4-f4a0,", ","(?i)[.,?!;\s]*(?:vie?rgul(es?|as?|in)|viandules?|viagnules?)[.,?!;\s]*",motvirgule,"mot, "
+7e95b6bf-5b75,/,(?i)\s*slash\s*, slash ,/
+b8cf1d1d-1380,\n,"(?i)\s*(?:retours?\s+|all(?:er|ez)\s+)?[àa]\s+la\s+lignes?[.,?!;\s]*", à la ligne ,\n
+7516e9dc-ea5e,\n,"(?i)\s*(?:sautes?|sceau)\sune\slignes?[.,?!;\s]*", saute une ligne ,\n
+a6f92682-8234,\n\n,"(?i)\s*(?:saut|sceau)\sde\slignes?[.,?!;\s]*", saut de ligne ,\n\n
+3f1c9a2e-7b4d,"    $1\u","(?i)[ \t]*(?:nouvel\s+)?alin[ée]as?[.,?!;]*[ \t]*([^\w\n]*)","Nouvel alinéa - patrique","    - Patrique"
