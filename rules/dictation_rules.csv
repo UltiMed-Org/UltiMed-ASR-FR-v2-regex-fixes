@@ -34,7 +34,7 @@ caedf8d8-efce,"""","(?i)[.,?!;]*début(?:des?|[.,?!;\s])+citations?[.,?!;\s]*",d
 80602648-e022,(,"(?i)^ouvr(ir|es?|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;\s]*",ouvrez la parenthèse ,(
 cf5f2423-ad6e,),"(?i)[.,?!;\s]*ferm(e|es|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;]*",fermez la parenthèse ,) 
 03239c0b-eb86,#,(?i)(dièses?|hashtag)-?,dièse ,# 
-f5b91b4a-5aad,- ,"(?i)[.,?!;\s]*nouveaux?[\s-]+tir(?:ets?|ée?s?|er)[.,?!;\s]*",nouveaux tiret,- 
+f5b91b4a-5aad,- ,"(?i)[.,?!;\s]*nouveaux?[\s-]+tir(?:ets?|ée?s?|er)[.,?!;:\s]*",nouveaux tiret,- 
 e4b20116-c9cb,-,"(?i)[.,?!;\s]*(traits?|très)\s+d'union[.,?!;\s]*",trait d'union,-
 8e62aa31-1ef9, : ,"(?i)(?:^|[.,?!;\s]+)(deux|2)(\s*poin(ts|t|g|gs)|\.)[.,?!;\s]*",deux points, : 
 c41ef761-eec1, ; ,"(?i)[.,?!;\s]*points?[-\s]+virgules?[.,?!;\s]*",point virgule, ; 
@@ -46,6 +46,6 @@ cf6dd67c-cc34,. ,"(?i)[.,?!;\s]*points?[.,?!;\s]*",mot point,mot.
 c5b833e4-f4a0,", ","(?i)[.,?!;\s]*(?:vie?rgul(es?|as?|in)|viandules?|viagnules?)[.,?!;\s]*",motvirgule,"mot, "
 7e95b6bf-5b75,/,(?i)\s*slash\s*, slash ,/
 b8cf1d1d-1380,\n,"(?i)\s*(?:retours?\s+|all(?:er|ez)\s+)?[àa]\s+la\s+lignes?[.,?!;:\s]*", à la ligne ,\n
-7516e9dc-ea5e,\n,"(?i)\s*(?:sautes?|sceau)\sune\slignes?[.,?!;\s]*", saute une ligne ,\n
-a6f92682-8234,\n\n,"(?i)\s*(?:saut|sceau)\sde\slignes?[.,?!;\s]*", saut de ligne ,\n\n
-3f1c9a2e-7b4d,"    $1\u","(?i)[ \t]*(?:nouvel\s+)?alig?n[ée]as?[.,?!;]*[ \t]*([^\w\n]*)","Nouvel alinéa - patrique","    - Patrique"
+7516e9dc-ea5e,\n,"(?i)\s*(?:sautes?|sceau)\sune\slignes?[.,?!;:\s]*", saute une ligne ,\n
+a6f92682-8234,\n\n,"(?i)\s*(?:saut|sceau)\sde\slignes?[.,?!;:\s]*", saut de ligne ,\n\n
+3f1c9a2e-7b4d,"    $1\u","(?i)[ \t]*(?:nouvel\s+)?alig?n[ée]as?[.,?!;:]*[ \t]*([^\w\n]*)","Nouvel alinéa - patrique","    - Patrique"
