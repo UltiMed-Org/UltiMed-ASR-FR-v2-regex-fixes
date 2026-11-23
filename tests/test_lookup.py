@@ -410,7 +410,7 @@ def test_user_rules_2026_11_23() -> None:
 
 
 def test_venlafaxine_2026_11_23() -> None:
-    """Venlafaxine mishearings (owner, 2026-11-23): the l' forms give back the article, the
+    """Venlafaxine and vortioxetine mishearings (owner, 2026-11-23): the l' forms give back the article, the
     everyday sentences that share their words are left alone."""
     _check_committed("venlafaxine 2026-11-23", [
         ("sous vent la faccine 75 mg", "sous venlafaxine 75 mg"), ("sous volafacine", "sous venlafaxine"),
@@ -418,6 +418,7 @@ def test_venlafaxine_2026_11_23() -> None:
         ("arrêt de l'avant-là vaccine", "arrêt de la venlafaxine"),
         ("le vent la nuit", "le vent la nuit"), ("avant la visite", "avant la visite"),
         ("l'avant-bras gauche", "l'avant-bras gauche"),
+        ("sous portioxetine 10 mg", "sous vortioxetine 10 mg"),
     ])
 
 

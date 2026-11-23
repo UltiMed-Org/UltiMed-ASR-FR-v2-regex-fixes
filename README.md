@@ -230,7 +230,7 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 2,103 | 2,229 | 0 | 828,246 | 123,957 |
+| `manual_fix_rules` | 2,103 | 2 230 | 0 | 828,338 | 123,973 |
 | `drug_fix_rules` | 4,145 | 22,521 | 55 | 3,059,293 | 465,159 |
 | `dictionary_fix_rules` | 36,177 | 177,160 | 803 | 28,966,051 | 4,334,831 |
 | `parhaf_fix_rules` | 2,502 | 5,474 | 41 | 1,312,214 | 168,494 |
