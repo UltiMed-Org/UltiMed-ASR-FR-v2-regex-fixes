@@ -190,7 +190,9 @@ def test_confusion_groups_cli() -> None:
     the test split) and ``quorbamab`` (2), and once where the label had no lexicon word, so
     it is one group with two candidates, ``heard_correct_count`` 1, and the committed-style
     rule ``florbamab -> zorbamab`` as fallback. ``blimid`` has a single target and is no
-    group. The examples carry the split, and an examples path inside the repo is refused."""
+    group. ``fémorale`` was heard for ``fémorales`` and ``fémoral``, two targets that only
+    differ from it by a silent ending, so it is no group either (audio cannot pick one). The
+    examples carry the split, and an examples path inside the repo is refused."""
     import json
     import tempfile
 
@@ -213,10 +215,16 @@ def test_confusion_groups_cli() -> None:
             "e": ("avec quorbamab ce matin", "avec florbamab ce matin", "train"),
             "f": ("un florbamab sans faute", "un florbamab sans faute", "train"),
             "g": ("sous blimide", "sous blimid", "train"),
+            "h": ("artères fémorales gauches", "artères fémorale gauches", "train"),
+            "i": ("artères fémorales gauches", "artères fémorale gauches", "train"),
+            "j": ("un pouls fémoral fort", "un pouls fémorale fort", "train"),
+            "k": ("un pouls fémoral fort", "un pouls fémorale fort", "val"),
         }
         report = {"zorbamab": {"n_seen": 3, "n_correct": 0, "n_deleted": 0, "errors": {"florbamab": 3}, "targets": {}},
                   "quorbamab": {"n_seen": 2, "n_correct": 0, "n_deleted": 0, "errors": {"florbamab": 2}, "targets": {}},
-                  "blimide": {"n_seen": 1, "n_correct": 0, "n_deleted": 0, "errors": {"blimid": 1}, "targets": {}}}
+                  "blimide": {"n_seen": 1, "n_correct": 0, "n_deleted": 0, "errors": {"blimid": 1}, "targets": {}},
+                  "fémorales": {"n_seen": 2, "n_correct": 0, "n_deleted": 0, "errors": {"fémorale": 2}, "targets": {}},
+                  "fémoral": {"n_seen": 2, "n_correct": 0, "n_deleted": 0, "errors": {"fémorale": 2}, "targets": {}}}
         (build / "errors.json").write_text(json.dumps(report))
         (build / "hyps.jsonl").write_text("".join(json.dumps({"audio": str(man / f"{c}.flac"), "hyp": h}) + "\n"
                                                   for c, (_, h, _) in clips.items()))

@@ -183,13 +183,66 @@ def regex_fallback(heard: str, fixes) -> str | None:
     return None if text == heard else text
 
 
+def homophone_key(word: str) -> str:
+    """``word`` without the French plural and feminine endings that are not pronounced.
+
+    Two words with the same key sound the same, so audio cannot choose between them:
+    ``abdominale`` / ``abdominales`` / ``abdominal``, ``résiduelle`` / ``résiduel``,
+    ``opérée`` / ``opéré``, ``inférieure`` / ``inférieur``. Endings that ARE heard keep
+    their own key: ``pelvienne`` / ``pelvien``, ``active`` / ``actif``, ``cervicaux`` /
+    ``cervical``, ``nerveuse`` / ``nerveux``.
+
+    >>> [homophone_key(w) for w in ("abdominales", "abdominal", "résiduelles", "opérées", "aiguë")]
+    ['abdominal', 'abdominal', 'résiduel', 'opéré', 'aigu']
+    >>> homophone_key("pelvienne") == homophone_key("pelvien"), homophone_key("cervicaux") == homophone_key("cervical")
+    (False, False)
+    """
+    w = word.lower()
+    if len(w) > 3 and w[-1] in "sx" and not w.endswith("ss"):
+        w = w[:-1]
+    if len(w) > 3 and w[-1] == "e" and w[-2] in "éiulr":
+        w = w[:-1]
+        if w.endswith("ll"):
+            w = w[:-1]
+    elif len(w) > 3 and w.endswith("uë"):
+        w = w[:-1]
+    return w
+
+
+def drop_homophones(heard: str, counts: Counter, *merged: dict[str, set]) -> Counter:
+    """``counts`` without the candidates that only differ from ``heard`` by a silent ending
+    (the audio cannot tell them apart; agreement is a grammar checker's job), and with
+    candidates that sound like each other merged into the most frequent one (counts summed,
+    and each ``merged`` dict's sets united into it).
+
+    >>> drop_homophones("abdominale", Counter({"abdominales": 630, "abdominal": 12}))
+    Counter()
+    >>> drop_homophones("pelviennes", Counter({"pelvienne": 9, "pelviens": 5, "pelvien": 3}))
+    Counter({'pelviens': 8})
+    """
+    hk = homophone_key(heard)
+    out: Counter = Counter()
+    owner: dict[str, str] = {}
+    for t, n in sorted(counts.items(), key=lambda x: (-x[1], x[0])):
+        k = homophone_key(t)
+        if k == hk:
+            continue
+        o = owner.setdefault(k, t)
+        out[o] += n
+        if o != t:
+            for d in merged:
+                d[o] |= d[t]
+    return out
+
+
 def build_groups(groups: dict[tuple, dict], spellings: dict[str, str], drug_lex: set[str], fixes,
                  min_candidate_count: int = 1, min_total: int = 3) -> list[dict]:
     """The output rows, most total occurrences first (see the module docstring for the fields).
 
-    Candidates whose final spelling coincides are merged; a candidate below
-    ``min_candidate_count`` is dropped, then a group needs two candidates and ``min_total``
-    errors over them.
+    Candidates whose final spelling coincides are merged; then ``drop_homophones`` removes
+    the candidates that only differ from the heard form by a silent plural or feminine
+    ending and merges the ones that sound alike; a candidate below ``min_candidate_count``
+    is dropped, then a group needs two candidates and ``min_total`` errors over them.
     """
     out = []
     for k, g in groups.items():
@@ -201,10 +254,11 @@ def build_groups(groups: dict[tuple, dict], spellings: dict[str, str], drug_lex:
             counts[text] += sum(raw.values())
             drugs[text] |= g["drugs"][tk]
             sources[text] |= g["sources"][tk]
+        heard = g["spelling"].most_common(1)[0][0]
+        counts = drop_homophones(heard, counts, drugs, sources)
         cands = [(t, n) for t, n in sorted(counts.items(), key=lambda x: (-x[1], x[0])) if n >= min_candidate_count]
         if len(cands) < 2 or sum(n for _, n in cands) < min_total:
             continue
-        heard = g["spelling"].most_common(1)[0][0]
         out.append({"heard": heard,
                     "candidates": [{"text": t, "count": n} for t, n in cands],
                     "heard_correct_count": max(0, g["hyp_occurrences"] - g["errors"]),
