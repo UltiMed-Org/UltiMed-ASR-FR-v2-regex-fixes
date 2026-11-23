@@ -7,7 +7,7 @@
 drug spotting, the character-level mapping inside a multi-word replace, glued elisions)
 and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply_rules),
 03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py, _util.py (the shared JSONL helpers),
-06_build_convention_fixes.py and 09_apply_resolutions.py, plus 10_build_confusion_groups.py
+06_build_convention_fixes.py and 09_apply_resolutions.py, plus 10_build_confusion_groups.py and 11_import_v1_rules.py
 (doctests and a run on a tiny synthetic build folder).
 
     uv run tests/test_drug_asr_rules.py
@@ -248,6 +248,51 @@ def test_confusion_groups_cli() -> None:
     print("10 confusion groups CLI: OK")
 
 
+def test_import_v1_rules() -> None:
+    """11's doctests, then the three behaviours the import promises, end to end on toy data: a v1
+    replacement is respelled to the v2 labels' spelling (``acétoacétate`` -> ``acéto-acétate``), a variant
+    a v2 file already rewrites keeps its v2 replacement (v2 wins), and an imported variant that rewrites
+    a correct v2 label or worsens a v2 transcript is dropped."""
+    _run_doctests("11_import_v1_rules.py")
+    mod = load_script("11_import_v1_rules.py")
+    b = mod.b
+    labels = ["Dosage de l'acéto-acétate.", "cétose à acéto-acétate", "un acéto-acétate élevé",
+              "sous prednisone depuis mai", "pas de lodose"]
+    v1 = {"drug": [{"variants": ["lodose", "lo dose"], "replacement": "Lodoz"}],
+          "term": [{"variants": ["aceto acétates", "acétoacétat"], "replacement": "acétoacétate"},
+                   {"variant": "prednisone", "count": 3, "replacement": "prednisolone"}]}
+    # 1. respelling: the labels' majority spelling, whatever the case, accents and hyphens
+    targets = {r["replacement"] for rs in v1.values() for r in rs}
+    sp = mod.label_spellings(labels, set().union(*map(mod.lookup_keys, targets)))
+    new = {t: mod.respell(t, sp, {"lodoz", "prednisolone"}) for t in targets}
+    assert new == {"acétoacétate": "acéto-acétate", "Lodoz": "Lodoz", "prednisolone": "prednisolone"}, new
+    report, origin = mod.v1_report(v1, new)
+    rules, rej = b.build_rules(report, [], labels, {})
+    assert {(r["variant"], r["replacement"]) for r in rules} >= {("aceto acétates", "acéto-acétate"),
+                                                                  ("acétoacétat", "acéto-acétate")}, rules
+    # "prednisone" is in a correct label: 02's real_text guard, as in a v2 build; "lodose" too
+    assert {r["variant"]: r["reason"] for r in rej} == {"prednisone": "real_text", "lodose": "real_text"}, rej
+    # 2. v2 wins: a variant a v2 file already holds is not imported, whatever v1 said
+    keep, rej = mod.screen(rules, {b._key("lo dose")}, origin)
+    assert [(r["variant"], r["reason"]) for r in rej] == [("lo dose", "v2_variant")], rej
+    assert sorted(r["variant"] for r in keep) == ["aceto acétates", "acétoacétat"], keep
+    # 3. the text check: one that would rewrite a correct label, one that makes a transcript worse
+    probe = keep + [{"variant": "cétose", "pattern": b.variant_pattern("cétose"), "replacement": "cétone"}]
+    bad = mod.bad_variants(probe, labels, [("un acéto-acétate élevé", "un acétoacétat élevé"),
+                                           ("aceto acétates normaux", "aceto acétates normaux")])
+    assert bad == {"cétose": "label_rewrite", "aceto acétates": "v2_hyp_worse"}, bad
+    # merged into a v2 rule of the same replacement, the result is what 08 can rebuild, and is tagged
+    v2 = [m for _, m in mod.m.merge_rules([{"variant": v, "pattern": b.variant_pattern(v), "replacement": "acéto-acétate"}
+                                           for v in ("acetoacetatte", "acéto acétatte")])]
+    merged = mod.m.merge_checked(mod.insert_ordered(v2, [{k: v for k, v in keep[1].items() if k != "v1"}]), labels)
+    assert len(merged) == 1 and mod.tag_imported(merged, {"acétoacétat"}) == 1, merged
+    assert merged[0]["v1_variants"] == ["acétoacétat"] and len(merged[0]["variants"]) == 3, merged
+    lk = load_script("08_build_lookup.py")
+    assert lk.check_pattern(merged[0]), merged[0]
+    assert mod.strip_imported(merged)[0]["variants"] == ["acetoacetatte", "acéto acétatte"]
+    print("11 import v1 rules: OK")
+
+
 if __name__ == "__main__":
     test_extract_drug_errors()
     test_extract_hyps_out()
@@ -263,3 +308,4 @@ if __name__ == "__main__":
     test_convention_fixes_agree()
     test_build_confusion_groups()
     test_confusion_groups_cli()
+    test_import_v1_rules()
