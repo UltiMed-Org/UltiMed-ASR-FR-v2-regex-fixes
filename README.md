@@ -20,16 +20,16 @@ License: AGPL-3.0-or-later for everything in this repository (rules, lookup tabl
 
 These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against the corrected labels and re-mined on 2026-11-20 on the unified labels, see [scripts/README.md](scripts/README.md)) from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
 
-The drug and dictionary files also carry the **v1 rules, respelled to v2** (2026-11-23, `scripts/11_import_v1_rules.py`, see "v1 rules imported" below): 127,270 variants the v1 rules fixed, learned from the errors of four v1-era models (the v1 fine-tune and the base parakeet-ultra in fp32, int8 and w4a8), so they hold misspellings the v2 model does not make on the corpus but other models, and v2 on new audio, do. Each imported rule says so (`"source": "v1"`, or `"v1_variants"` on a v2 rule that took some), and the files, their names and their order are unchanged, so apps need no change.
+The drug and dictionary files also carry the **v1 rules, respelled to v2** (2026-11-23, `scripts/11_import_v1_rules.py`, see "v1 rules imported" below): 127,270 variants the v1 rules fixed, learned from the errors of four v1-era models (the v1 fine-tune and the base parakeet-ultra in fp32, int8 and w4a8), so they hold misspellings the v2 model does not make on the corpus but other models, and v2 on new audio, do. Each imported rule says so (`"source": "v1"`, or `"v1_variants"` on a v2 rule that took some), and the files, their names and their order are unchanged, so apps need no change. All five learned files then also carry **variants found by two other models of the family** (2026-11-23, `scripts/12_import_extra_variants.py`, see "Other models' variants imported" below): 14,825 from the w4a8 quantisation of v2 and 10,332 from the redux fine-tune, tagged `"source": "v2-w4a8"` / `"redux-v2"` (or `"v2-w4a8_variants"` / `"redux-v2_variants"` on a rule that took some).
 
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
 | `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, `Diffu-K`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,160 | 2,060 |
-| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset, plus the v1 drug rules respelled (15,914 of the variants) | 20,971 | 4,046 |
-| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024, plus the v1 term rules respelled (111,356 of the variants) | 154,931 | 34,357 |
-| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,146 | 2,172 |
-| `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
-| `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
+| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset, plus the v1 drug rules respelled (15,914 of the variants) and other models' variants (1,147 w4a8, 403 redux) | 22,521 | 4,145 |
+| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024, plus the v1 term rules respelled (111,356 of the variants) and other models' variants (12,769 w4a8, 9,460 redux) | 177,160 | 36,177 |
+| `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset, plus other models' variants (872 w4a8, 456 redux) | 5,474 | 2,502 |
+| `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only), plus other models' variants (29 w4a8, 12 redux) | 188 | 138 |
+| `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset, plus other models' variants (8 w4a8, 1 redux) | 52 | 47 |
 
 `rules/confusion_groups.jsonl` is not a rule file: it lists the 905 heard forms the v2 model writes for two or more different words (`étuximab` for `cetuximab` or `rituximab`), which no regex can fix, with the candidates and their counts, for an acoustic second pass. No transcript or clip id is in it. It is tied to the model that produced the hypotheses and must be regenerated for each new model; see `scripts/10_build_confusion_groups.py` and [scripts/README.md](scripts/README.md). Script and docs written with Claude Code.
 
@@ -115,6 +115,48 @@ Effect, the six files in order, before and after the import (2026-11-23, measure
 - **The cost is 15 more rewritten news sentences** (0.015 %), all proper names or rare words that a v1 variant happens to spell: `Kiari` -> `Chiari`, `Tenas` -> `Ténase`, `Perrine Balant` -> `Ballant`, `Koelner` -> `Köllner`, `paqueter` -> `plaquettaire`. Those were left in rather than dropped one by one, since the 2023 news is the held-out measure of what the guards miss; the 2024 news and Wikipedia guards already removed the variants they contain. On Common Voice the 7 new rewrites are of the same kind (`Rainwood` -> `Rinvoq`, `aphase` -> `aphasie`), 1 is a real fix (`champignistes` -> `champignonnistes`), and none changes the WER.
 - A first import let `cubis` -> `pubis`, `mélasses` -> `melas` (VoxPopuli) and `locals` -> `local` through, which is why one-word imported variants that are French words are now refused (312 variants, a few of them real fixes such as `ibuprofen`).
 
+### Other models' variants imported (2026-11-23)
+
+The learned files come from the errors of one model, the v2 fp32 blend. Two more models of the family transcribed the whole v2 corpus: the w4a8 quantisation of v2 (`v2-w4a8`, what a phone or a small CPU runs) and the redux fine-tune in int8 (`redux-v2`, about twice v2's WER). Each got a full rule build (07, all splits, the release guards), and `scripts/12_import_extra_variants.py` (written with Claude Code) adds the variants those builds found that the committed files lack, each to its own subset's file (a w4a8 drug variant to `drug_fix_rules.jsonl`, a redux PARHAF variant to `parhaf_fix_rules.jsonl`, ...). It reuses 11's steps 3 to 5 as one shared function (`merge_import`), so the checks are the same as for the v1 import:
+
+1. **Existing rules win**: a variant any of the six files already rewrites (the v1 imports included) is skipped, and w4a8 goes first, so redux cannot claim a variant w4a8 already gave.
+2. **Redux is held to more evidence**: a redux variant seen once in its build is kept only if w4a8 or the v1 rules also hold it (`--min-count redux-v2=2`). No such filter for w4a8, whose WER is close to v2's.
+3. The current conflict decisions (09), then the same text checks as 11: no imported variant may rewrite a correct v2 label or make a v2 transcript worse, alone or with the six files in order, and 03's merge check on 2.1M texts.
+
+Result: 25,157 variants imported, 14,825 from w4a8 and 10,332 from redux. Redux screening kept 10,344 (10,270 seen at least twice, 74 seen once but corroborated) and dropped 36,559 seen once with no corroboration; 46,771 redux variants were already in a file. The text checks dropped 15 (alone) and 12 (in the stack), and the author's decision removed one more (`aussi toxique` -> `ocytocique`, below). The six files grow from 42,795 rules / 182,398 variants to 45,069 / 207,555.
+
+Effect, six files in order (measured with Claude Code; same normalisation and v2 fp32 hyps as above; better / worse clips in brackets). The w4a8 and redux rows apply the rules to those models' own transcripts of the test splits, which the imported variants were mined from, so they show what the import fixes for those models rather than how it generalizes:
+
+| set | no rules | before | after |
+|---|---|---|---|
+| test drugs, v2 fp32 | 3.53 % | 1.91 % (884 / 0) | 1.90 % (889 / 0) |
+| test dictionary, v2 fp32 | 2.54 % | 1.97 % (9,958 / 4) | 1.96 % (10,076 / 4) |
+| test PARHAF, v2 fp32 | 2.85 % | 2.48 % (1,093 / 0) | 2.48 % (1,101 / 0) |
+| test PARROT, v2 fp32 | 3.64 % | 3.31 % (206 / 1) | 3.31 % (207 / 1) |
+| test acronyms, v2 fp32 | 2.96 % | 2.72 % (6 / 0) | 2.72 % (6 / 0) |
+| test drugs, w4a8 | 3.66 % | 2.22 % (799 / 0) | 1.99 % (900 / 0) |
+| test dictionary, w4a8 | 2.65 % | 2.11 % (9,402 / 2) | 2.03 % (10,578 / 2) |
+| test PARHAF, w4a8 | 2.90 % | 2.54 % (1,085 / 1) | 2.51 % (1,151 / 1) |
+| test PARROT, w4a8 | 3.90 % | 3.57 % (209 / 0) | 3.52 % (239 / 0) |
+| test acronyms, w4a8 | 2.66 % | 2.42 % (6 / 0) | 2.39 % (7 / 0) |
+| test drugs, redux | 6.22 % | 4.42 % (903 / 0) | 4.12 % (1,028 / 0) |
+| test dictionary, redux | 5.18 % | 4.17 % (16,246 / 15) | 3.94 % (18,982 / 14) |
+| test PARHAF, redux | 4.96 % | 4.21 % (2,024 / 1) | 4.06 % (2,296 / 0) |
+| test PARROT, redux | 6.38 % | 5.72 % (420 / 0) | 5.54 % (512 / 0) |
+| test acronyms, redux | 4.28 % | 3.89 % (11 / 0) | 3.68 % (16 / 0) |
+| FLEURS fr (1,665) | 4.72 % | 4.72 % (1 / 0) | 4.72 % (1 / 0) |
+| Common Voice fr, unseen (5,000) | 6.22 % | 6.22 % (2 / 0) | 6.22 % (2 / 0) |
+| author's dictated medical sentences (206) | 8.69 % | 7.51 % (38 / 3) | 7.51 % (38 / 3) |
+| correct v2 labels (602,776) | 0 | 0 | 0 |
+| French news 2023, held out (100,000) | 47 | 62 | 67 |
+| VoxPopuli fr references (1,662) | 0 | 0 | 0 |
+
+- **On v2's own transcripts the gain is small**, as for the v1 import: the v2 files already hold v2's errors. No split gets worse and no split has more worse clips than before. On the two other models it is the point of the import: w4a8's drug test split goes from 2.22 % to 1.99 %, redux's dictionary split from 4.17 % to 3.94 %.
+- **Real speech does not move**: on FLEURS, Common Voice and the author's dictations the outputs are identical, line for line, with and without the import. Those clips were transcribed by v2 (int8), whose errors the files already held; the import is aimed at the other models' mishearings.
+- On the whole corpus (all splits, v2 fp32 transcripts) the import changes 1,994 transcripts, 1,586 of them closer to their label and none further.
+- **The cost is 5 more rewritten news sentences** (0.005 %), all proper names or a typo in the source: `Meyerhoff` -> `Meyerhof`, `Burkin Faso` -> `Bourquin Faso`, `Michel Chiret` -> `Chiray`, `musée Esrine` -> `Ezrine`, and `mener des sensibilisation` -> `désensibilisation` (a redux variant seen twice). A sixth, `tout aussi toxique` -> `tout ocytocique`, came from a redux variant inside the merged `ocytocique` rule; `aussi toxique` is everyday French, so the author's decision in `inputs/conflict_resolutions.tsv` (empty replacement: no rule) removed it, which also stops a rerun from importing it again.
+- 03's merge check runs on the v2 transcripts, the labels, Wikipedia and the held-out news, not on the w4a8 or redux transcripts, which have only been used to find the variants.
+
 ## Layout
 
 | path | content |
@@ -183,15 +225,15 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
 | `manual_fix_rules` | 2,060 | 2,160 | 0 | 810,536 | 121,464 |
-| `drug_fix_rules` | 4,046 | 20,971 | 47 | 2,868,349 | 439,675 |
-| `dictionary_fix_rules` | 34,357 | 154,931 | 693 | 25,671,288 | 3,889,360 |
-| `parhaf_fix_rules` | 2,172 | 4,146 | 35 | 1,076,131 | 136,574 |
-| `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,581 |
-| `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,374 |
+| `drug_fix_rules` | 4,145 | 22,521 | 55 | 3,059,293 | 465,159 |
+| `dictionary_fix_rules` | 36,177 | 177,160 | 803 | 28,966,051 | 4,334,831 |
+| `parhaf_fix_rules` | 2,502 | 5,474 | 41 | 1,312,214 | 168,494 |
+| `parrot_fix_rules` | 138 | 188 | 1 | 66,823 | 10,060 |
+| `acronyms_fix_rules` | 47 | 52 | 0 | 21,999 | 4,663 |
 
 ### How the lookups are built
 
-`uv run scripts/08_build_lookup.py rules/*_fix_rules.jsonl` writes `lookup/<name>.lookup.json` for the six rule files. Do not pass `rules/*.jsonl`: that glob also catches `confusion_groups.jsonl`, which is not a rule file and stops the build with `KeyError: 'variant'`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 42,795 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`uv run scripts/08_build_lookup.py rules/*_fix_rules.jsonl` writes `lookup/<name>.lookup.json` for the six rule files. Do not pass `rules/*.jsonl`: that glob also catches `confusion_groups.jsonl`, which is not a rule file and stops the build with `KeyError: 'variant'`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 45,069 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 
@@ -200,10 +242,10 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 - the doctests, and that `lookup/` is up to date with `rules/` (rebuilt into a temporary dir and compared byte for byte);
 - 67 hand-written edge texts (elisions, curly apostrophes, hyphens, whitespace runs, capitals, titles, `aujourd'hui`-like words) on a small rule set built for them;
 - 3,000 random texts per file, made of the file's own variants (randomly upper-cased, accented, cut short or re-separated) glued by spaces, hyphens, apostrophes, elisions and titles;
-- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 5,057, dictionary 10,000, PARHAF 4,146, PARROT 3,000, acronyms 3,000), so every variant of every file but the dictionary is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
+- a synthetic corpus per file, generated at test time with a fixed seed: the file's own variants (a quarter of them mangled as above) placed in 15 invented French carrier sentences, at the start and end of the text, after an elision (`l'`, `d’`, `qu'`), next to punctuation, capitalised, after a title, and two side by side. Each file gets as many sentences as it has variants, at least 3,000 and at most 10,000 (manual 3,000, drug 10,000, dictionary 10,000, PARHAF 5,474, PARROT 3,000, acronyms 3,000), so every variant of every file but the drug and dictionary files is used at least once (possibly mangled). No real transcript is committed: to check real ones, point `ULTIMED_LOOKUP_CORPUS` at a corpus (a `.jsonl` with a `hyp` field, or a `.txt` with one text per line), optionally with `ULTIMED_LOOKUP_LIMIT`, and every file runs on it.
 - the six files in order against one list made of them concatenated, regex and lookup alike, on 500 synthetic sentences per file, 1,000 random texts and the conflict-decision sentences (`test_concatenation`, see "One list?").
 
-All pass with 0 mismatches (2026-11-15). On 20,093 v2 transcripts (every 30th line of the full corpus), the regex and lookup outputs were also identical for all six files (checked on the files as they were before the 2026-11-15 conflict decisions and convention respelling, not rerun since; manual 175 lines changed, drug 479, dictionary 3,419, PARHAF 559, PARROT 35, acronyms 12). The reference applier is slower than the indexed regexes in Python (about 0.8 to 1.9 ms per line per file, vs 0.1 to 1.2 ms for `compile_rules`); it is written for clarity, not speed.
+All pass with 0 mismatches (2026-11-15, rerun 2026-11-23 on the files with every import). On 20,093 v2 transcripts (every 30th line of the full corpus), the regex and lookup outputs were also identical for all six files (checked on the files as they were before the 2026-11-15 conflict decisions and convention respelling, not rerun since; manual 175 lines changed, drug 479, dictionary 3,419, PARHAF 559, PARROT 35, acronyms 12). The reference applier is slower than the indexed regexes in Python (about 0.8 to 1.9 ms per line per file, vs 0.1 to 1.2 ms for `compile_rules`); it is written for clarity, not speed.
 
 ## Tests
 
