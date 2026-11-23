@@ -161,3 +161,11 @@ pasiente	patiente
 à motivationnel	amotivationnel
 6 besoins	si besoin
 6 besoin	si besoin
+# 2026-11-23, owner: venlafaxine mishearings. The "avant la" rows match any accent and separator (avant-là, avant-la);
+# the l' rows take the longer match and give back the article: l'avant-lafaxine -> la venlafaxine.
+l'avant lafaxine	la venlafaxine
+l'avant la vaccine	la venlafaxine
+avant lafaxine	venlafaxine
+avant la vaccine	venlafaxine
+vent la faccine	venlafaxine
+volafacine	venlafaxine
