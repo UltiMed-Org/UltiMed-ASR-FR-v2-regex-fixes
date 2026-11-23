@@ -43,25 +43,6 @@ aafac7ee-9e2e, ! ,"(?i)[.,?!;\s]*points?\s+d'exclamations?[.,?!;\s]*",mot point 
 034e39ea-443e,. ,"(?i)[.,?!;\s]*points?\s+finals?[.,?!;\s]*",point final,. 
 b60760a1-eba9,... ,"(?i)[.,?!;\s]*(?:(?:trois|3)\s+(?:petits?\s+)?points|points?\s+de\s+suspensions?)[.,?!;\s]*",trois points,... 
 cf6dd67c-cc34,. ,"(?i)[.,?!;\s]*points?[.,?!;\s]*",mot point,mot. 
-9df292e6-03ad,"Recherche de point d'appel infectieux
-
--Pulmonaire : auscultation claire, pas de toux pas de crachat, radiopulmonaire sans foyer parenchymateux
--Urinaire : pas de signe fonctionnel, bandelette urinaire normale
--Cutané : pas de rash, pas d'éruption, pas d'érésipèle retrouvé sur le corps
--Abdominal : pas de vomissement, pas de diarrhée, abdomen reste souple et dépressible, pas d'ictère
--Méningé : pas de raideur de nuque, pas de purpura, pas de trouble de la conscience
--Cardio vasculaire : pas de nouveau souffle à l'auscultation cardiaque
--ORL : pas de pharyngite pas d'angine pas de rhinite, absence d'otalgie
-","(?i)[.,?!;\s]*ajoute\s+la\s+commande\s+examen\s+infectieux[.,?!;\s]*",Ajoute la commande examen infectieux.,"Recherche de point d'appel infectieux
-
--Pulmonaire : auscultation claire, pas de toux pas de crachat, radiopulmonaire sans foyer parenchymateux
--Urinaire : pas de signe fonctionnel, bandelette urinaire normale
--Cutané : pas de rash, pas d'éruption, pas d'érésipèle retrouvé sur le corps
--Abdominal : pas de vomissement, pas de diarrhée, abdomen reste souple et dépressible, pas d'ictère
--Méningé : pas de raideur de nuque, pas de purpura, pas de trouble de la conscience
--Cardio vasculaire : pas de nouveau souffle à l'auscultation cardiaque
--ORL : pas de pharyngite pas d'angine pas de rhinite, absence d'otalgie
-"
 c5b833e4-f4a0,", ","(?i)[.,?!;\s]*(?:vie?rgul(es?|as?|in)|viandules?|viagnules?)[.,?!;\s]*",motvirgule,"mot, "
 7e95b6bf-5b75,/,(?i)\s*slash\s*, slash ,/
 b8cf1d1d-1380,\n,"(?i)\s*(?:retours?\s+|all(?:er|ez)\s+)?[àa]\s+la\s+lignes?[.,?!;\s]*", à la ligne ,\n
