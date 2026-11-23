@@ -40,9 +40,11 @@ the v2 labels write ``acéto-acétate``: 9,496 correct v2 labels rewritten), so 
    rewritten label or a worse transcript is dropped (04's ``drop_unk_variants``, which rebuilds the
    merged pattern) and the check runs again until clean.
 
-Rerunning is safe: previously imported variants are stripped first (``strip_imported``), so the import
-always starts from the learned v2 files. Rerun it after 07 rebuilds the learned files, then 08 for the
-lookups. The dropped variants and their reason go to ``--rejected`` (default
+Rerunning is safe: previously imported variants are stripped first (``strip_imported``: every import,
+``12_import_extra_variants.py``'s too, so rerun 12 after this), so the import always starts from the
+learned v2 files. Rerun it after 07 rebuilds the learned files, then 12, then 08 for the lookups. Steps 3
+to 5 are ``merge_import``, which 12 reuses as is; ``--workers N`` splits their passes over the texts
+between N processes. The dropped variants and their reason go to ``--rejected`` (default
 ``rejected/v1_import.rejected.jsonl``, gitignored like the other rejected lists: they hold transcript
 fragments).
 
@@ -80,6 +82,7 @@ m, extract = u.m, r9.b.extract
 _REPO = _HERE.parent
 TARGETS = {"drug": "drug_fix_rules.jsonl", "term": "dictionary_fix_rules.jsonl"}  # v1 file -> v2 file it joins
 V2_FILES = ("drug", "dictionary", "parhaf", "parrot", "acronyms", "manual")  # the application order
+LEARNED = V2_FILES[:-1]  # the files a build learns (07) and an import adds to; manual is hand-written
 DEFAULT_LEXICON = extract.SCRIPTS_DIR / "01_dictionnary" / "original_dictionnary.jsonl"
 _ELISION_HEAD = re.compile(r"^((?:[dlnjmtsc]|qu)['’])(?=\S)", re.IGNORECASE)
 _WORD_RE = re.compile(rf"[{b._WORD}]+")
@@ -278,36 +281,76 @@ def screen(singles: list[dict], v2_keys: set[tuple], origin: dict[tuple, str]) -
     return keep, rejected
 
 
-def strip_imported(rules: list[dict]) -> list[dict]:
-    """``rules`` without what an earlier run of this script added, so a rerun starts from the v2 build.
+_SOURCE_KEY = "{}_variants"  # the field listing a rule's variants imported from one source: v1_variants, ...
+
+
+def _source_keys(r: dict) -> dict[str, str]:
+    """``source -> field`` for the ``<source>_variants`` fields of rule ``r`` (``variants`` itself excluded)."""
+    return {k[:-len("_variants")]: k for k in r if k.endswith("_variants") and k != "variants"}
+
+
+def provenance(rules: list[dict]) -> dict[str, str]:
+    """``variant -> source`` for every imported variant of ``rules``. A rule whose variants all come from one
+    import says so with ``"source"`` (``"v1"``, ``"v2-w4a8"``, ...); a rule mixing learned and imported
+    variants (or two imports) lists each import's in ``"<source>_variants"`` (``tag_sources`` writes both).
+
+    >>> provenance([{"variants": ["aa", "bb"], "v1_variants": ["bb"]}, {"variant": "cc", "source": "redux-v2"}])
+    {'bb': 'v1', 'cc': 'redux-v2'}
+    """
+    out: dict[str, str] = {}
+    for r in rules:
+        if r.get("source"):
+            out.update(dict.fromkeys(variants_of(r), r["source"]))
+        for src, k in _source_keys(r).items():
+            out.update(dict.fromkeys(r[k], src))
+    return out
+
+
+def tag_sources(rules: list[dict], origin: dict[str, str]) -> int:
+    """Rewrite the provenance fields of ``rules`` in place from ``origin`` (``variant -> source``, as
+    ``provenance`` returns), dropping any old ones; returns how many rules hold an imported variant.
+
+    >>> rules = [{"variants": ["aa", "bb", "cc"]}, {"variant": "dd", "v1_variants": ["dd"]}, {"variant": "ee"}]
+    >>> tag_sources(rules, {"bb": "v1", "cc": "v2-w4a8", "dd": "v1"}), rules
+    (2, [{'variants': ['aa', 'bb', 'cc'], 'v1_variants': ['bb'], 'v2-w4a8_variants': ['cc']}, {'variant': 'dd', 'source': 'v1'}, {'variant': 'ee'}])
+    """
+    n = 0
+    for r in rules:
+        for k in _source_keys(r).values():
+            del r[k]
+        r.pop("source", None)
+        by: dict[str, list[str]] = defaultdict(list)
+        for v in variants_of(r):
+            if v in origin:
+                by[origin[v]].append(v)
+        if not by:
+            continue
+        n += 1
+        if len(by) == 1 and len(next(iter(by.values()))) == len(variants_of(r)):
+            r["source"] = next(iter(by))
+        else:
+            for src, vs in by.items():
+                r[_SOURCE_KEY.format(src)] = vs
+    return n
+
+
+def strip_imported(rules: list[dict], sources=None) -> list[dict]:
+    """``rules`` without the variants imported from ``sources`` (default: every import), the remaining
+    provenance kept, so a rerun of an import starts from the files it found.
 
     >>> mk = lambda vs, t: m.merge_rules([{"variant": v, "pattern": b.variant_pattern(v), "replacement": t} for v in vs])[0][1]
     >>> rules = [dict(mk(["aa", "bb"], "X"), v1_variants=["bb"]), dict(mk(["cc"], "Y"), source="v1")]
     >>> [(r["variants"], "v1_variants" in r) for r in strip_imported(rules)]
     [(['aa'], False)]
+    >>> rules = [dict(mk(["aa", "bb", "cc"], "X"), v1_variants=["bb"], **{"redux-v2_variants": ["cc"]})]
+    >>> [(r["variants"], provenance([r])) for r in strip_imported(rules, {"redux-v2"})]
+    [(['aa', 'bb'], {'bb': 'v1'})]
     """
-    imported = {v for r in rules for v in (variants_of(r) if r.get("source") == "v1" else r.get("v1_variants", ()))}
-    out, _ = u.drop_unk_variants(rules, bad=lambda v: v in imported)
-    for r in out:
-        r.pop("v1_variants", None)
+    origin = provenance(rules)
+    gone = {v for v, src in origin.items() if sources is None or src in sources}
+    out, _ = u.drop_unk_variants(rules, bad=lambda v: v in gone)
+    tag_sources(out, {v: src for v, src in origin.items() if v not in gone})
     return out
-
-
-def tag_imported(rules: list[dict], imported: set[str]) -> int:
-    """Mark the provenance of each rule holding an ``imported`` variant, in place; returns how many."""
-    n = 0
-    for r in rules:
-        mine = [v for v in variants_of(r) if v in imported]
-        r.pop("v1_variants", None)
-        r.pop("source", None)
-        if not mine:
-            continue
-        n += 1
-        if len(mine) == len(variants_of(r)):
-            r["source"] = "v1"
-        else:
-            r["v1_variants"] = mine
-    return n
 
 
 def _order_key(r: dict) -> tuple:
@@ -365,18 +408,20 @@ def _fired_variants(rule: dict, text: str, mine: set[str]) -> set[str]:
 
 
 def stack_offenders(files: dict[str, list[dict]], imported: set[str], labels: list[str],
-                    pairs: list[tuple[str, str]]) -> tuple[dict[str, str], Counter]:
+                    pairs: list[tuple[str, str]], sources=None, workers: int = 1) -> tuple[dict[str, str], Counter]:
     """Apply the six files in order (``files``, application order) to every label and transcript; return
     ``(imported variant -> reason, line counts)`` for the imported variants that fired where a label was
     rewritten (``label_rewrite``) or a transcript came out worse against its label (``v2_hyp_worse``)
     than with the imported variants removed.
 
     The baseline without them is computed only for transcripts an imported variant touched, so the check
-    costs one pass of the six files plus a second over those lines.
+    costs one pass of the six files plus a second over those lines. The baseline strips the imports of
+    ``sources`` (default every import: see ``strip_imported``); ``workers`` splits the lines between
+    forked processes (``util.pmap_ranges``).
     """
     fixes = {n: b.compile_rules(rs) for n, rs in files.items()}
-    base_files = {n: strip_imported([dict(r) for r in rs]) if any(r.get("source") or r.get("v1_variants") for r in rs)
-                  else rs for n, rs in files.items()}
+    base_files = {n: strip_imported([dict(r) for r in rs], sources) if provenance(rs) else rs
+                  for n, rs in files.items()}
     base_fixes = {n: (b.compile_rules(base_files[n]) if base_files[n] is not files[n] else fixes[n]) for n in files}
 
     def run(text: str, fx) -> tuple[str, set[str]]:
@@ -390,30 +435,42 @@ def stack_offenders(files: dict[str, list[dict]], imported: set[str], labels: li
                     hit |= _fired_variants(rs[j], before, imported)
         return text, hit
 
-    bad: dict[str, str] = {}
+    def on_labels(lo: int, hi: int) -> tuple[set[str], Counter]:
+        hits, st = set(), Counter()
+        for t in labels[lo:hi]:
+            out, hit = run(t, fixes)
+            if out != t:
+                st["labels_rewritten"] += 1
+                hits |= hit
+        return hits, st
+
+    def on_pairs(lo: int, hi: int) -> tuple[set[str], Counter]:
+        hits, st = set(), Counter()
+        for ref, hyp in pairs[lo:hi]:
+            out, hit = run(hyp, fixes)
+            if not hit:
+                continue
+            base = run(hyp, base_fixes)[0]
+            if base == out:
+                continue
+            st["hyps_changed_by_import"] += 1
+            e0, e1 = word_errors(ref, base), word_errors(ref, out)
+            st["better"] += e1 < e0
+            if e1 > e0:
+                st["worse"] += 1
+                hits |= hit
+        return hits, st
+
     stats = Counter()
-    for t in labels:
-        out, hit = run(t, fixes)
-        if out != t:
-            stats["labels_rewritten"] += 1
-            bad.update({v: "label_rewrite" for v in hit})
-    for ref, hyp in pairs:
-        out, hit = run(hyp, fixes)
-        if not hit:
-            continue
-        base = run(hyp, base_fixes)[0]
-        if base == out:
-            continue
-        stats["hyps_changed_by_import"] += 1
-        e0, e1 = word_errors(ref, base), word_errors(ref, out)
-        stats["better"] += e1 < e0
-        if e1 > e0:
-            stats["worse"] += 1
-            bad.update({v: "v2_hyp_worse" for v in hit if v not in bad})
-    return bad, stats
+    worse, rewrote = set(), set()
+    for acc, fn, n in ((rewrote, on_labels, len(labels)), (worse, on_pairs, len(pairs))):
+        for hits, st in util.pmap_ranges(fn, n, workers):
+            acc |= hits
+            stats += st
+    return {**dict.fromkeys(worse, "v2_hyp_worse"), **dict.fromkeys(rewrote, "label_rewrite")}, stats
 
 
-def bad_variants(rules: list[dict], labels: list[str], pairs: list[tuple[str, str]]) -> dict[str, str]:
+def bad_variants(rules: list[dict], labels: list[str], pairs: list[tuple[str, str]], workers: int = 1) -> dict[str, str]:
     """``variant -> reason`` for the imported single-variant ``rules`` that, applied alone and one at a
     time, rewrite a correct label (``label_rewrite``) or make a transcript worse (``v2_hyp_worse``).
 
@@ -424,22 +481,28 @@ def bad_variants(rules: list[dict], labels: list[str], pairs: list[tuple[str, st
     [('myrtazapine', 'v2_hyp_worse'), ('prednisone', 'label_rewrite')]
     """
     fix = b.compile_rules(rules)
-    bad: dict[str, str] = {}
-    for t in labels:
-        tr: list[int] = []
-        if fix(t, tr) != t:
-            for j in tr:
-                bad[rules[j]["variant"]] = "label_rewrite"
-    for ref, hyp in pairs:
-        tr = []
-        if fix(hyp, tr) == hyp:
-            continue
-        e0 = word_errors(ref, hyp)
-        for j in tr:
-            v = rules[j]["variant"]
-            if v not in bad and word_errors(ref, b.apply_rules(hyp, [rules[j]])) > e0:
-                bad[v] = "v2_hyp_worse"
-    return bad
+
+    def on_labels(lo: int, hi: int) -> set[str]:
+        out = set()
+        for t in labels[lo:hi]:
+            tr: list[int] = []
+            if fix(t, tr) != t:
+                out |= {rules[j]["variant"] for j in tr}
+        return out
+
+    def on_pairs(lo: int, hi: int) -> set[str]:
+        out = set()
+        for ref, hyp in pairs[lo:hi]:
+            tr: list[int] = []
+            if fix(hyp, tr) == hyp:
+                continue
+            e0 = word_errors(ref, hyp)
+            out |= {rules[j]["variant"] for j in tr if word_errors(ref, b.apply_rules(hyp, [rules[j]])) > e0}
+        return out
+
+    rewrote = set().union(*util.pmap_ranges(on_labels, len(labels), workers))
+    worse = set().union(*util.pmap_ranges(on_pairs, len(pairs), workers))
+    return {**dict.fromkeys(worse, "v2_hyp_worse"), **dict.fromkeys(rewrote, "label_rewrite")}
 
 
 def _clip_key(path: str) -> tuple[str, ...]:
@@ -462,6 +525,57 @@ def read_pairs(hyps_path: Path, manifests: tuple[Path, ...]) -> list[tuple[str, 
     return out
 
 
+def merge_import(files: dict[str, list[dict]], new: dict[str, list[dict]], origin: dict[str, str], labels: list[str],
+                 pairs: list[tuple[str, str]], merge_paths, meta: tuple[str, ...] = (),
+                 workers: int = 1) -> tuple[set[str], list[dict]]:
+    """Steps 3 to 5 of an import, shared with ``12_import_extra_variants.py``: check, merge, check in order.
+
+    ``new`` maps a file name of ``files`` (application order, edited in place) to the single-variant rules
+    to add to it, ``origin`` each of their variants to its source tag (``"v1"``, ``"v2-w4a8"``, ...). Their
+    keys in ``meta`` are bookkeeping, copied to the rejected rows and not into the rule files.
+
+    3. ``bad_variants`` on the ``labels`` and the ``(label, transcript)`` ``pairs``, new rules alone;
+    4. per file, ``insert_ordered`` then 03's ``merge_checked`` on the transcripts, labels and ``merge_paths``
+       texts, then ``tag_sources`` (earlier imports keep their tags, merging drops them);
+    5. ``stack_offenders`` on the six files in order, dropping the new variants involved until clean.
+
+    Returns ``(new variants kept, rejected rows)``.
+    """
+    rejected: list[dict] = []
+    keep = [r for rs in new.values() for r in rs]
+    bad = bad_variants(keep, labels, pairs, workers)
+    rejected += [{"variant": r["variant"], "replacement": r["replacement"], **{k: r[k] for k in meta if k in r},
+                  "reason": bad[r["variant"]]} for r in keep if r["variant"] in bad]
+    logger.info(f"{len(bad)} dropped by the text check ({Counter(bad.values())}), {len(keep) - len(bad)} left")
+
+    merge_texts = sorted({h for _, h in pairs} | set(labels)
+                         | {t for p in merge_paths for t in util.read_texts(p, "text")})
+    imported = {r["variant"] for r in keep} - set(bad)
+    sources = {origin[v] for v in imported}
+    origin = {**provenance([r for n in new for r in files[n]]), **{v: origin[v] for v in imported}}
+    for n, rs in new.items():
+        mine = [{k: v for k, v in r.items() if k not in meta} for r in rs if r["variant"] in imported]
+        if not mine:
+            continue
+        combined = insert_ordered(files[n], mine)
+        logger.info(f"{n}: {len(files[n])} rules + {len(mine)} imported variants, merge-checking on {len(merge_texts)} texts")
+        files[n] = m.merge_checked(combined, merge_texts, workers)
+        logger.info(f"{n}: {tag_sources(files[n], origin)} of {len(files[n])} rules hold imported variants")
+    del merge_texts
+
+    while True:
+        offenders, stats = stack_offenders(files, imported, labels, pairs, sources, workers)
+        logger.info(f"six files in order: {dict(stats)}; {len(offenders)} imported variants to drop")
+        if not offenders:
+            break
+        rejected += [{"variant": v, "reason": f"stack_{why}"} for v, why in sorted(offenders.items())]
+        imported -= set(offenders)
+        for n in new:
+            files[n], _ = u.drop_unk_variants(files[n], bad=lambda v: v in offenders)
+            tag_sources(files[n], origin)
+    return imported, rejected
+
+
 @click.command()
 @click.option("--hyps", "hyps_path", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path),
               help="the v2 model's transcripts of every corpus clip (jsonl, fields audio + hyp)")
@@ -481,15 +595,20 @@ def read_pairs(hyps_path: Path, manifests: tuple[Path, ...]) -> list[tuple[str, 
               show_default=True, help="the v2 rule files, read and rewritten in place")
 @click.option("--rejected", "rejected_path", type=click.Path(dir_okay=False, path_type=Path),
               default=_REPO / "rejected" / "v1_import.rejected.jsonl", show_default=True)
+@click.option("--workers", type=int, default=1, show_default=True,
+              help="processes for the passes over every text (03's merge check, the text checks)")
 def main(hyps_path: Path, labels_paths: tuple[Path, ...], guard_paths: tuple[Path, ...], names_paths: tuple[Path, ...],
          merge_paths: tuple[Path, ...], lexicons: tuple[Path, ...], v1_dir: Path, rules_dir: Path,
-         rejected_path: Path) -> None:
+         rejected_path: Path, workers: int) -> None:
     """Respell, re-guard and merge the v1 rules into rules/drug_fix_rules.jsonl and rules/dictionary_fix_rules.jsonl."""
     labels_paths = labels_paths or b.DEFAULT_LABELS
     labels = [t for p in labels_paths for t in util.read_texts(p, "text")]
     v1 = {k: util.read_jsonl(v1_dir / f"{k}_fix_rules.jsonl") for k in TARGETS}
     files = {n: util.read_jsonl(rules_dir / f"{n}_fix_rules.jsonl") for n in V2_FILES}
-    for n in ("drug", "dictionary"):
+    others = Counter(src for n in LEARNED for src in provenance(files[n]).values() if src != "v1")
+    if others:
+        logger.warning(f"also stripping the later imports {dict(others)}: rerun 12_import_extra_variants.py after this")
+    for n in LEARNED:
         files[n] = strip_imported(files[n])
     logger.info(f"v1: {', '.join(f'{k} {len(rs)} rules' for k, rs in v1.items())}; {len(labels)} labels")
     rejected: list[dict] = []
@@ -523,41 +642,15 @@ def main(hyps_path: Path, labels_paths: tuple[Path, ...], guard_paths: tuple[Pat
                       r9.EXTRA_NAMES.read_text(encoding="utf-8").splitlines(), labels, name="v1 import")
     logger.info(f"{len(keep)} variants pass the guards")
 
-    # 3. imported rules alone on the labels and the v2 transcripts
+    # 3 to 5: check alone, merge into the v2 files (03-checked), check the six files in order
     pairs = read_pairs(hyps_path, tuple(Path(p) for p in labels_paths))
     logger.info(f"{len(pairs)} (label, transcript) pairs")
-    bad = bad_variants(keep, labels, pairs)
-    rejected += [{"variant": r["variant"], "replacement": r["replacement"], "v1": r["v1"], "reason": bad[r["variant"]]}
-                 for r in keep if r["variant"] in bad]
-    keep = [r for r in keep if r["variant"] not in bad]
-    logger.info(f"{len(bad)} dropped by the text check ({Counter(bad.values())}), {len(keep)} left")
+    new = {n: [r for r in keep if r["v1"] == kind] for kind, n in (("drug", "drug"), ("term", "dictionary"))}
+    imported, rej = merge_import(files, new, dict.fromkeys((r["variant"] for r in keep), "v1"), labels, pairs,
+                                 merge_paths, ("v1",), workers)
+    rejected += rej
 
-    # 4. merge into the v2 files, 03-checked
-    merge_texts = sorted({h for _, h in pairs} | set(labels)
-                         | {t for p in merge_paths for t in util.read_texts(p, "text")})
-    imported = {r["variant"] for r in keep}
-    for kind, n in (("drug", "drug"), ("term", "dictionary")):
-        mine = [{k: v for k, v in r.items() if k != "v1"} for r in keep if r["v1"] == kind]
-        combined = insert_ordered(files[n], mine)
-        logger.info(f"{n}: {len(files[n])} rules + {len(mine)} imported variants, merge-checking on {len(merge_texts)} texts")
-        files[n] = m.merge_checked(combined, merge_texts)
-        logger.info(f"{n}: {tag_imported(files[n], imported)} of {len(files[n])} rules hold imported variants")
-    del merge_texts
-
-    # 5. the six files in order, until no imported variant is involved in a bad line
-    while True:
-        offenders, stats = stack_offenders(files, imported, labels, pairs)
-        logger.info(f"six files in order: {dict(stats)}; {len(offenders)} imported variants to drop")
-        if not offenders:
-            break
-        for n in ("drug", "dictionary"):
-            files[n], _ = u.drop_unk_variants(files[n], bad=lambda v: v in offenders)
-        rejected += [{"variant": v, "reason": f"stack_{why}"} for v, why in sorted(offenders.items())]
-        imported -= set(offenders)
-        for n in ("drug", "dictionary"):
-            tag_imported(files[n], imported)
-
-    for n in ("drug", "dictionary"):
+    for n in LEARNED:
         util.write_jsonl(rules_dir / f"{n}_fix_rules.jsonl", files[n])
         logger.info(f"wrote {rules_dir / f'{n}_fix_rules.jsonl'}: {len(files[n])} rules, "
                     f"{sum(len(variants_of(r)) for r in files[n])} variants")

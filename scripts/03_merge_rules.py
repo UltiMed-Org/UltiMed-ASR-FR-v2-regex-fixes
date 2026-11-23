@@ -95,7 +95,7 @@ def merge_rules(rules: list[dict], keep: set[int] = frozenset()) -> list[tuple[l
     return out
 
 
-def merge_checked(rules: list[dict], texts: list[str]) -> list[dict]:
+def merge_checked(rules: list[dict], texts: list[str], workers: int = 1) -> list[dict]:
     """Merged rules giving exactly the outputs of ``rules`` on every text in ``texts``.
 
     Merged, ``bb`` would fire before ``bb cc`` and turn "bb cc" into "X cc", so X stays split:
@@ -104,17 +104,34 @@ def merge_checked(rules: list[dict], texts: list[str]) -> list[dict]:
     ...          [("aa bb", "X"), ("bb cc", "Y"), ("bb", "X"), ("zz", "Z"), ("zzz", "Z")]]
     >>> [r.get("variants", r.get("variant")) for r in merge_checked(rules, ["bb cc", "aa bb zz"])]
     ['aa bb', 'bb cc', 'bb', ['zz', 'zzz']]
+    >>> merge_checked(rules, ["bb cc", "aa bb zz"] * 4, workers=2) == merge_checked(rules, ["bb cc", "aa bb zz"])
+    True
+
+    ``workers`` > 1 splits each pass over ``texts`` between forked processes (``util.pmap_ranges``), same result.
     """
+    texts = list(texts)
     fix = b.compile_rules(rules)
-    want = {t: o for t in texts if (o := fix(t)) != t}  # untouched texts must stay untouched too
+
+    def changed(lo: int, hi: int) -> dict[str, str]:
+        return {t: o for t in texts[lo:hi] if (o := fix(t)) != t}
+
+    want: dict[str, str] = {}  # untouched texts must stay untouched too
+    for part in util.pmap_ranges(changed, len(texts), workers):
+        want.update(part)
     keep: set[int] = set()
     while True:
         merged = merge_rules(rules, keep)
-        mfix, bad = b.compile_rules([r for _, r in merged]), set()
-        for t in texts:
-            tr = []
-            if mfix(t, tr) != want.get(t, t):
-                bad |= {merged[j][0][0] for j in tr if len(merged[j][0]) > 1}
+        mfix = b.compile_rules([r for _, r in merged])
+
+        def split(lo: int, hi: int) -> set[int]:
+            bad = set()
+            for t in texts[lo:hi]:
+                tr = []
+                if mfix(t, tr) != want.get(t, t):
+                    bad |= {merged[j][0][0] for j in tr if len(merged[j][0]) > 1}
+            return bad
+
+        bad = set().union(*util.pmap_ranges(split, len(texts), workers))
         if not bad:
             break
         logger.info(f"{len(bad)} merged groups change some text: split back")

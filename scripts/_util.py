@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import multiprocessing
 from pathlib import Path
 from types import ModuleType
-from typing import Iterable, Iterator
+from typing import Callable, Iterable, Iterator
 
 _HERE = Path(__file__).resolve().parent
 
@@ -102,3 +103,45 @@ def read_texts(path: str | Path, field: str) -> Iterator[str]:
                     yield line.rstrip("\n")
             else:
                 yield json.loads(line)[field]
+
+
+def pmap_ranges(fn: Callable[[int, int], object], n: int, workers: int = 1) -> list:
+    """``[fn(lo, hi), ...]`` over ``workers`` contiguous slices of ``range(n)``, in slice order, each in a
+    forked process; ``workers <= 1`` (or fewer than two items per worker) runs one ``fn(0, n)`` here.
+
+    ``fn`` reaches the workers through ``fork``, not pickling, so it may be a closure over large data
+    (compiled rules, millions of texts) and the scripts need not be importable modules (they are loaded
+    by path, see the module docstring); only the results travel back, pickled. Used by the passes that
+    run whole rule files over every text: 03's ``merge_checked`` and 11's text checks.
+
+    >>> pmap_ranges(lambda lo, hi: sum(range(lo, hi)), 10, 1), pmap_ranges(lambda lo, hi: (lo, hi), 10, 3)
+    ([45], [(0, 3), (3, 6), (6, 10)])
+    """
+    if workers <= 1 or n < 2 * workers:
+        return [fn(0, n)]
+    ctx = multiprocessing.get_context("fork")
+    queue = ctx.SimpleQueue()
+    bounds = [n * k // workers for k in range(workers + 1)]
+
+    def run(k: int) -> None:
+        try:
+            queue.put((k, fn(bounds[k], bounds[k + 1]), None))
+        except BaseException as e:  # noqa: BLE001 (re-raised in the parent)
+            queue.put((k, None, repr(e)))
+
+    procs = [ctx.Process(target=run, args=(k,)) for k in range(workers)]
+    for p in procs:
+        p.start()
+    out: dict[int, object] = {}
+    try:
+        for _ in procs:  # drain before join: a worker blocks on put until its result is read
+            k, res, err = queue.get()
+            if err is not None:
+                raise RuntimeError(f"pmap_ranges worker {k} failed: {err}")
+            out[k] = res
+    finally:
+        for p in procs:
+            if len(out) < len(procs):
+                p.terminate()
+            p.join()
+    return [out[k] for k in range(workers)]

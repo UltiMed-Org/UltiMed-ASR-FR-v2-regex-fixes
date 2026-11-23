@@ -7,7 +7,7 @@
 drug spotting, the character-level mapping inside a multi-word replace, glued elisions)
 and of 02_build_fix_rules.py (pattern bounds, rejection reasons, ordering, apply_rules),
 03_merge_rules.py, 04_drop_unk_variants.py, 05_build_manual_rules.py, _util.py (the shared JSONL helpers),
-06_build_convention_fixes.py and 09_apply_resolutions.py, plus 10_build_confusion_groups.py and 11_import_v1_rules.py
+06_build_convention_fixes.py and 09_apply_resolutions.py, plus 10_build_confusion_groups.py, 11_import_v1_rules.py and 12_import_extra_variants.py
 (doctests and a run on a tiny synthetic build folder).
 
     uv run tests/test_drug_asr_rules.py
@@ -285,12 +285,69 @@ def test_import_v1_rules() -> None:
     v2 = [m for _, m in mod.m.merge_rules([{"variant": v, "pattern": b.variant_pattern(v), "replacement": "acéto-acétate"}
                                            for v in ("acetoacetatte", "acéto acétatte")])]
     merged = mod.m.merge_checked(mod.insert_ordered(v2, [{k: v for k, v in keep[1].items() if k != "v1"}]), labels)
-    assert len(merged) == 1 and mod.tag_imported(merged, {"acétoacétat"}) == 1, merged
+    assert len(merged) == 1 and mod.tag_sources(merged, {"acétoacétat": "v1"}) == 1, merged
     assert merged[0]["v1_variants"] == ["acétoacétat"] and len(merged[0]["variants"]) == 3, merged
     lk = load_script("08_build_lookup.py")
     assert lk.check_pattern(merged[0]), merged[0]
     assert mod.strip_imported(merged)[0]["variants"] == ["acetoacetatte", "acéto acétatte"]
     print("11 import v1 rules: OK")
+
+
+def test_import_extra_variants() -> None:
+    """12's doctests, then a run of its CLI on two toy builds: a variant a v2 file already rewrites keeps its
+    v2 replacement, the second build loses the variants the first one claimed, its variants seen once go
+    unless corroborated, one that rewrites a correct label is dropped, the rest join their subset's file
+    tagged with their source, the v1 tags survive, and a rerun gives the same files."""
+    _run_doctests("12_import_extra_variants.py")
+    if not _has_scripts_dir("09_apply_resolutions.py"):  # 09's label conventions read the dataset scripts
+        return
+    import json
+    import tempfile
+
+    from click.testing import CliRunner
+
+    mod = load_script("12_import_extra_variants.py")
+    b, m = mod.b, mod.m
+    d = Path(tempfile.mkdtemp())
+
+    def rule(vs, t, **kw):
+        return dict(m.merge_rules([{"variant": v, "pattern": b.variant_pattern(v), "replacement": t} for v in vs])[0][1], **kw)
+
+    def write(path, rows):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+
+    rules_dir = d / "rules"
+    for n in mod.r11.V2_FILES:
+        write(rules_dir / f"{n}_fix_rules.jsonl", [])
+    write(rules_dir / "drug_fix_rules.jsonl", [rule(["lodose"], "Lodoz"), rule(["kardegique"], "Kardégic", source="v1")])
+    write(d / "w4a8" / "drugs" / "rules.jsonl", [rule(["myrtazapine", "lodose"], "mirtazapine")])
+    write(d / "w4a8" / "dictionary" / "rules.jsonl", [rule(["cetose"], "cétone"), rule(["bronchiolitte"], "bronchiolite")])
+    write(d / "redux" / "drugs" / "rules.jsonl", [rule(["myrtazapine", "mirtazapinne", "myrtazapyne", "venlafaxinne"],
+                                                       "mirtazapine")])
+    write(d / "redux" / "drugs" / "rules.unmerged.jsonl", [{"variant": "mirtazapinne", "count": 1},
+                                                          {"variant": "venlafaxinne", "count": 2}])
+    write(d / "v1" / "drug_fix_rules.jsonl", [{"variant": "myrtazapyne", "replacement": "mirtazapine"}])
+    labels = ["sous mirtazapine le soir", "cétose à l'admission", "une bronchiolite", "pas de lodose"]
+    write(d / "full.jsonl", [{"audio_filepath": f"/x/drugs/{i}.wav", "text": t} for i, t in enumerate(labels)])
+    write(d / "hyps.jsonl", [{"audio": f"/y/drugs/{i}.wav", "hyp": t} for i, t in enumerate(labels)])
+    args = ["--hyps", d / "hyps.jsonl", "--labels", d / "full.jsonl", "--build", f"v2-w4a8={d / 'w4a8'}",
+            "--build", f"redux-v2={d / 'redux'}", "--min-count", "redux-v2=2", "--v1-dir", d / "v1",
+            "--rules-dir", rules_dir, "--rejected", d / "rejected.jsonl", "--workers", "2"]
+    for attempt in (1, 2):  # the rerun strips this import first, so it must give the same files
+        res = CliRunner().invoke(mod.main, [str(a) for a in args], catch_exceptions=False)
+        assert res.exit_code == 0, res.output
+        drug = {r["replacement"]: r for r in mod.util.read_jsonl(rules_dir / "drug_fix_rules.jsonl")}
+        assert drug["Lodoz"]["variant"] == "lodose" and drug["Kardégic"]["source"] == "v1", drug
+        mirt = drug["mirtazapine"]
+        assert mirt["variants"] == ["venlafaxinne", "myrtazapine", "myrtazapyne"], mirt
+        assert mirt["v2-w4a8_variants"] == ["myrtazapine"] and mirt["redux-v2_variants"] == ["venlafaxinne", "myrtazapyne"], mirt
+        dic = [r for r in mod.util.read_jsonl(rules_dir / "dictionary_fix_rules.jsonl")]
+        assert [(r.get("variant"), r["source"]) for r in dic] == [("bronchiolitte", "v2-w4a8")], dic
+        rej = {(r["variant"], r.get("source")): r["reason"] for r in mod.util.read_jsonl(d / "rejected.jsonl")}
+        assert rej == {("lodose", "v2-w4a8"): "existing", ("myrtazapine", "redux-v2"): "existing",
+                       ("mirtazapinne", "redux-v2"): "min_count", ("cetose", "v2-w4a8"): "label_rewrite"}, rej
+    print("12 import extra variants: OK")
 
 
 if __name__ == "__main__":
@@ -309,3 +366,4 @@ if __name__ == "__main__":
     test_build_confusion_groups()
     test_confusion_groups_cli()
     test_import_v1_rules()
+    test_import_extra_variants()
