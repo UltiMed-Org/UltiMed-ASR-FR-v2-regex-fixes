@@ -420,6 +420,7 @@ def test_venlafaxine_2026_11_23() -> None:
         ("l'avant-bras gauche", "l'avant-bras gauche"),
         ("sous portioxetine 10 mg", "sous vortioxetine 10 mg"),
         ("sous ventlafaxine", "sous venlafaxine"), ("sous devant la vaccine", "sous venlafaxine"),
+        ("sous ventrafaxine", "sous venlafaxine"),
         ("devant la porte", "devant la porte"),
     ])
 
