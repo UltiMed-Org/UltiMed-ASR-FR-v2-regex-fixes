@@ -184,3 +184,6 @@ diffukat	*	Diffu-K
 # 2026-11-23, extra import: redux-v2 learned aussi toxique -> ocytocique, which rewrote "tout aussi toxique" in the
 # held-out news 2023; too common a phrase, no rule.
 aussi toxique	*	
+# 2026-11-23, owner: v2 learned ostéum -> ostéome, but the speaker may have meant ostium; ambiguous, no rule
+# (austéome -> ostéome stays).
+ostéum	*	

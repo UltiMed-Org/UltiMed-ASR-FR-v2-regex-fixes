@@ -273,6 +273,8 @@ RESOLVED = [
     ("antécédent d'Herpes gestationis", "antécédent d'Herpes gestationis"),
     ("une poussée d'herpes simplex", "une poussée d'herpes simplex"),
     ("par nitro-imidazole", "par nitro-imidazole"), ("par nitro-imidazolé", "par nitro-imidazolé"),
+    # ostéum is ambiguous (ostéome or ostium, owner 2026-11-23): left alone; austéome still fixed
+    ("un ostéum", "un ostéum"), ("l'ostéum", "l'ostéum"), ("un austéome", "un ostéome"),
     ("maladie d'Ostéogenèse Imparfaite", "maladie d'ostéogenèse imparfaite"),
     ("l'Ostéogénèse Imparfaite", "l'ostéogenèse imparfaite"),
     ("une ostéogénèse Imparfaite", "une ostéogenèse imparfaite"),
