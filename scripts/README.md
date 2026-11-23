@@ -437,3 +437,7 @@ uv run tests/test_lookup.py
 ## Smoke test (2026-09-29)
 
 Run 1.7.0 step 7000 on the 205 private oli clips found 211 drug occurrences (198 drugs) and 59 misspellings, for example `phélodipine` (félodipine), `d'hexaméthasone` (dexaméthasone) and `létoposide` (target `l'étoposide`, so the article is kept). 02 kept 57 rules and rejected 2 as `real_text`.
+
+## Checksums (`13_checksums.sh`)
+
+Writes `SHA256SUMS` at the repository root (SHA-256 of every file of `rules/` and `lookup/`, `sha256sum` format). Run it after any change to those files; `tests/test_checksums.py` fails while it is stale. See "Releases and checksums" in the main README.

@@ -154,6 +154,14 @@ Effect, six files in order (measured with Claude Code; same normalisation and v2
 - **The cost is 5 more rewritten news sentences** (0.005 %), all proper names or a typo in the source: `Meyerhoff` -> `Meyerhof`, `Burkin Faso` -> `Bourquin Faso`, `Michel Chiret` -> `Chiray`, `musée Esrine` -> `Ezrine`, and `mener des sensibilisation` -> `désensibilisation` (a redux variant seen twice). A sixth, `tout aussi toxique` -> `tout ocytocique`, came from a redux variant inside the merged `ocytocique` rule; `aussi toxique` is everyday French, so the author's decision in `inputs/conflict_resolutions.tsv` (empty replacement: no rule) removed it, which also stops a rerun from importing it again.
 - 03's merge check runs on the v2 transcripts, the labels, Wikipedia and the held-out news, not on the w4a8 or redux transcripts, which have only been used to find the variants.
 
+## Releases and checksums
+
+Each release is a git tag (first: `v2.0.0`, 2026-11-23) with a GitHub release holding `ultimed-fr-v2-rules-<tag>.tar.gz`: both forms of the rules (`rules/`, regex, and `lookup/`, lookup tables), `SHA256SUMS`, `LICENSE` and this README. The archive's own SHA-256 is in the `.sha256` file next to it and in the release notes.
+
+`SHA256SUMS` at the root lists the SHA-256 of every file of `rules/` and `lookup/`; `scripts/13_checksums.sh` rewrites it and `tests/test_checksums.py` fails when it is stale. To check a download: `sha256sum -c SHA256SUMS`.
+
+For an app that fetches the rules at run time (parakeet_web, Plumed): pin a tag (or commit) in the URL, for example `https://raw.githubusercontent.com/UltiMed-Org/UltiMed-ASR-FR-v2-regex-fixes/v2.0.0/lookup/drug_fix_rules.lookup.json`, and pin the expected hashes **in the app's own code**, refusing a file whose hash differs. A `SHA256SUMS` fetched from the same place as the files only detects corruption, not a tampered repository.
+
 ## Layout
 
 | path | content |
@@ -163,8 +171,9 @@ Effect, six files in order (measured with Claude Code; same normalisation and v2
 | `rejected/` | the candidates each v2 build rejected, with the reason, and `drug_asr_errors.json` (the misspellings the drug build started from); not published: they hold fragments of dataset transcripts and nothing reads them, so they stay local and gitignored |
 | `inputs/` | the author's `conflict_resolutions.tsv` (variants the learned files disagreed on), the hand-written `manual_fixes.tsv` and the generated `convention_fixes.tsv`, source of `manual_fix_rules.jsonl` |
 | `v1/` | the v1 outputs, kept for comparison: `drug_fix_rules.jsonl`, `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list) and the per-model `drug_asr_errors*.json` (their rejected lists stay local, like `rejected/`) |
-| `scripts/` | the build chain (01 to 07 and 09, plus 10 for the confusion groups and 11 for the v1 import, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
-| `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
+| `scripts/` | the build chain (01 to 07 and 09, plus 10 for the confusion groups and 11 and 12 for the v1 and other-model imports, 13 for `SHA256SUMS`, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
+| `SHA256SUMS` | SHA-256 of every file of `rules/` and `lookup/` (see [Releases and checksums](#releases-and-checksums)) |
+| `tests/` | `test_checksums.py` (`SHA256SUMS` is current), `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
 
 The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v2-scripts](https://github.com/UltiMed-Org/UltiMed-ASR-FR-v2-scripts) checkout. By default they look for it next to this repository, in a folder still named `UltiMed-ASR-FR-v1-scripts`; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
 
@@ -247,6 +256,7 @@ All pass with 0 mismatches (2026-11-15, rerun 2026-11-23 on the files with every
 ## Tests
 
 ```bash
+python tests/test_checksums.py
 uv run tests/test_lookup.py
 cd tests && uv run --with click --with loguru --with litellm --with tiktoken --with tqdm --with tenacity --with rapidfuzz --with wordfreq test_drug_asr_rules.py
 ```
