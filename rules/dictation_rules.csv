@@ -34,7 +34,7 @@ caedf8d8-efce,"""","(?i)[.,?!;]*début(?:des?|[.,?!;\s])+citations?[.,?!;\s]*",d
 80602648-e022,(,"(?i)^ouvr(ir|es?|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;\s]*",ouvrez la parenthèse ,(
 cf5f2423-ad6e,),"(?i)[.,?!;\s]*ferm(e|es|ez|er|é|ée|és|ées|ais|ait)(?:la|les||[.,?!;\s])+parenthèses?[.,?!;]*",fermez la parenthèse ,) 
 03239c0b-eb86,#,(?i)(dièses?|hashtag)-?,dièse ,# 
-f5b91b4a-5aad,- ,"(?i)[.,?!;\s]*nouveaux?\s+tir(?:ets?|ée?s?|er)[.,?!;\s]*",nouveaux tiret,- 
+f5b91b4a-5aad,- ,"(?i)[.,?!;\s]*nouveaux?[\s-]+tir(?:ets?|ée?s?|er)[.,?!;\s]*",nouveaux tiret,- 
 e4b20116-c9cb,-,"(?i)[.,?!;\s]*(traits?|très)\s+d'union[.,?!;\s]*",trait d'union,-
 8e62aa31-1ef9, : ,"(?i)(?:^|[.,?!;\s]+)(deux|2)(\s*poin(ts|t|g|gs)|\.)[.,?!;\s]*",deux points, : 
 c41ef761-eec1, ; ,"(?i)[.,?!;\s]*points?[-\s]+virgules?[.,?!;\s]*",point virgule, ; 
