@@ -20,11 +20,13 @@ License: AGPL-3.0-or-later for everything in this repository (rules, lookup tabl
 
 These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against the corrected labels and re-mined on 2026-11-20 on the unified labels, see [scripts/README.md](scripts/README.md)) from the v2 model alone (the 70/30 blend of the "mix7" weight soup with the v1 weights, fp32 ONNX) transcribing every clip of the v2 UltiMed corpus ([Olicorne/UltiMed-ASR-FR-v2](https://huggingface.co/datasets/Olicorne/UltiMed-ASR-FR-v2), 602,776 clips). The rules are learned from the v2 labels, so the replacement spelling is the one the v2 labels use. That includes the casing: a name or acronym that the labels write the same way every time comes out the same way in the replacement (`Gleason`, `angio-IRM`), see `scripts/09_apply_resolutions.py`. Each subset's file was built by `scripts/07_build_dataset_rules.sh`; [scripts/README.md](scripts/README.md) has the full build log, the guards and the evaluation.
 
+The drug and dictionary files also carry the **v1 rules, respelled to v2** (2026-11-23, `scripts/11_import_v1_rules.py`, see "v1 rules imported" below): 127,270 variants the v1 rules fixed, learned from the errors of four v1-era models (the v1 fine-tune and the base parakeet-ultra in fp32, int8 and w4a8), so they hold misspellings the v2 model does not make on the corpus but other models, and v2 on new audio, do. Each imported rule says so (`"source": "v1"`, or `"v1_variants"` on a v2 rule that took some), and the files, their names and their order are unchanged, so apps need no change.
+
 | file | what it fixes | variants | rules (merged) |
 |---|---|---|---|
-| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,156 | 2,059 |
-| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset | 5,057 | 2,447 |
-| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024 | 43,575 | 18,261 |
+| `manual_fix_rules.jsonl` | hand-written fixes and decisions (`post-opératoire`, `scanner lodose` to `scanner low-dose`, `Diffu-K`, ...), dataset-agnostic, built by `scripts/05_build_manual_rules.py` from `inputs/` | 2,160 | 2,060 |
+| `drug_fix_rules.jsonl` | drug names, learned on the drugs subset, plus the v1 drug rules respelled (15,914 of the variants) | 20,971 | 4,046 |
+| `dictionary_fix_rules.jsonl` | medical terms, learned on the dictionary subset, then filtered against French news 2024, plus the v1 term rules respelled (111,356 of the variants) | 154,931 | 34,357 |
 | `parhaf_fix_rules.jsonl` | medical terms, learned on the PARHAF subset | 4,146 | 2,172 |
 | `parrot_fix_rules.jsonl` | medical terms, learned on the PARROT subset (test only) | 147 | 117 |
 | `acronyms_fix_rules.jsonl` | medical terms, learned on the acronyms subset | 43 | 43 |
@@ -34,6 +36,8 @@ These are the **v2** rules, built on 2026-11-17 (rebuilt on 2026-11-18 against t
 The four term files replace v1's single `term_fix_rules.jsonl`. They overlap: 1,192 variants appear in both the dictionary and PARHAF files, and 35 variants get a different replacement depending on the file (19 dictionary vs PARHAF, e.g. `trocarde` becomes `trocart de` in one and `trocart d'` in the other; 12 dictionary vs drugs; 3 PARHAF vs drugs; 1 dictionary vs PARROT). The author decided those conflicts (33 distinct variants, some in two pairs) by hand on 2026-11-15 (`inputs/conflict_resolutions.tsv`, some only in a context: `lodose` becomes `low-dose` after `scanner` but `Lodoz` elsewhere, `trocarde` becomes `trocart d'` before a vowel). `scripts/09_apply_resolutions.py` removes them from the learned files and the decisions ship as manual rules, so no variant gets two replacements any more. The order still matters for chained rewrites: apply the drug file first, then the term files, and the manual file LAST, so its spelling conventions (`post-opératoire` -> `postopératoire`, `bévacizumab` -> `bevacizumab`) also respell what a learned rule wrote. (It used to go first so that a hand fix would win, e.g. `lodose` -> `lowdose` over the learned `Lodoz`; that variant is now decided in `conflict_resolutions.tsv` and removed from the learned files.) The order used for every with-rules number published for v2 (the benchmark tables and the real-voice page of the model repository) is: drugs, dictionary, PARHAF, PARROT, acronyms, then manual. Since no variant gets two replacements any more, the order of the term files only matters for chained rewrites between them; other orders were not measured.
 
 ### One list?
+
+The numbers in this section were measured on the files before the v1 import (25,099 rules, 55,124 variants); the reasoning does not depend on them.
 
 No merged file ships, on purpose (decided 2026-11-21 with Claude Code). v1's `term_fix_rules.jsonl` was not a merge of separate files: it came out of one build (02 then 03) over the pooled dictionary, PARHAF and PARROT hypotheses. For v2, a generated `all_fix_rules.jsonl` was considered and rejected, because it would only repeat what the six files already give:
 
@@ -77,6 +81,40 @@ Real speech (2026-11-21, measured with Claude Code). The v2 model (int8 ONNX enc
 - **Small samples.** 206 and 15 recordings of one speaker are enough to show the direction, not a precise size: one word is worth 0.08 points of WER on the 15 dictations and 0.03 on the 206 sentences.
 - **The rules are for French.** On the other ten FLEURS languages of the same benchmark run (3,484 clips), they rewrite 57 lines, 40 of them Portuguese `foram` -> `foramen`.
 
+### v1 rules imported (2026-11-23)
+
+The v1 rule files (`v1/drug_fix_rules.jsonl`, 3,963 rules / 19,032 variants, and `v1/term_fix_rules.jsonl`, 35,876 / 138,072) were not learned from the v2 model: they come from the errors of the v1 fine-tune and of the base parakeet-ultra in fp32, int8 and w4a8. So they know misspellings the v2 model does not make on the corpus but that the other models, and v2 itself on new audio, do. Applied as they are, they would write v1 spellings into v2 text (`acétoacétate` where the v2 labels write `acéto-acétate`) and rewrite 9,496 correct v2 labels. `scripts/11_import_v1_rules.py` (written with Claude Code) rebuilds each of them as a v2 rule, reusing the build scripts' own functions:
+
+1. **Respell the replacement** to the spelling the v2 labels use for it (their majority spelling once case, accents, hyphens and spaces are folded away: `acétoacétate` -> `acéto-acétate`, `abdomino-pelvienne` -> `abdominopelvienne`, `Solumédrol` -> `Solu-Médrol`), then the same passes as every v2 file (09: conflict decisions, title guard for `inputs/extra_names.txt`, label conventions, recasing to the labels). 1,883 of the 34,066 v1 replacements changed. A replacement with a word the labels never write is kept only if that word is a headword the builders track (drug lexicon, dictionary terms); 26 replacements (78 variants) had none and were dropped.
+2. **Re-guard every variant** with 02's own rules, as if a v2 build had found it: `real_text` against the v2 labels, the 1M French Wikipedia sentences and French news 2024, `short`, `other_term`, `common_words`, `far`, `ambiguous`, the INSEE names title guard; plus, for the import only, any one-word variant that is a French word at all (wordfreq Zipf >= 1.0, stricter than 02's 2.5, since no v2 transcript backs these variants). **v2 wins**: a variant any v2 file already rewrites keeps its v2 replacement and is not imported.
+3. **Check on text**: an imported variant is dropped if, alone or with the six files applied in order, it rewrites a correct v2 label or makes a v2 transcript of the corpus (any split) worse against its label.
+4. **Merge** into `drug_fix_rules.jsonl` (from the v1 drug file) or `dictionary_fix_rules.jsonl` (from the v1 term file), per replacement, with 03's merge checked on 2.1M texts (v2 transcripts, labels, French Wikipedia, held-out news 2023).
+
+Result: 127,270 variants imported (drugs 15,914, dictionary 111,356), 25,722 dropped: already in a v2 file 20,234, `common_words` 4,305, `real_text` 704, French word 312, no v2 spelling 78, ambiguous 40, made a v2 transcript worse 41, a character the lookup form cannot key (Greek or Cyrillic letters) 6, `contains_target` 2 (the other 4,112 v1 variants are spellings of one another once folded, or appear in both v1 files). The six files grow from 25,099 rules / 55,124 variants to 42,795 / 182,398.
+
+Effect, the six files in order, before and after the import (2026-11-23, measured with Claude Code; the WER uses the normalisation of the ultra repo's `evalrules.py`, on the fp32 ONNX v2 hyps of the 2026-11-20 re-mine for the test splits and on the int8 hyps of the real-speech check below; clips better / worse in brackets):
+
+| set | no rules | before | after |
+|---|---|---|---|
+| test drugs (2,059 clips) | 3.53 % | 1.93 % (880 / 0) | 1.91 % (884 / 0) |
+| test dictionary (49,891) | 2.54 % | 1.98 % (9,782 / 4) | 1.97 % (9,958 / 4) |
+| test PARHAF (5,489) | 2.85 % | 2.49 % (1,083 / 0) | 2.48 % (1,093 / 0) |
+| test PARROT (1,548) | 3.64 % | 3.32 % (204 / 1) | 3.31 % (206 / 1) |
+| test acronyms (151) | 2.96 % | 2.72 % (6 / 0) | 2.72 % (6 / 0) |
+| FLEURS fr (1,665) | 4.72 % | 4.72 % (1 / 0) | 4.72 % (1 / 0) |
+| Common Voice fr, unseen (5,000) | 6.22 % | 6.22 % (1 / 0) | 6.22 % (2 / 0) |
+| the author's dictated medical sentences (206) | 8.69 % | 7.73 % (33 / 3) | 7.51 % (38 / 3) |
+
+| rewritten lines | before | after |
+|---|---|---|
+| correct v2 labels (602,776) | 0 | 0 |
+| French news 2023, held out (100,000) | 47 | 62 |
+| VoxPopuli fr references (1,662) | 0 | 0 |
+
+- **The gain is small on the corpus and larger on new audio**, as expected: the v2 files were already learned from v2's own errors on these clips, so the test splits gain 0.01 to 0.02 points, while the author's own dictations (never seen by any rule build) go from 7.73 % to 7.51 %, 5 more sentences fixed (`trimétoprime` -> `triméthoprime`, `respéridone` -> `rispéridone`, `lébastine` -> `l'ébastine`, ...). The 3 worse sentences are the same spelling conventions as before the import (see "Real speech" above). The own-voice hyps were re-transcribed on CPU for this check, so the no-rules WER reads 8.69 % instead of the 8.72 % above.
+- **The cost is 15 more rewritten news sentences** (0.015 %), all proper names or rare words that a v1 variant happens to spell: `Kiari` -> `Chiari`, `Tenas` -> `Ténase`, `Perrine Balant` -> `Ballant`, `Koelner` -> `Köllner`, `paqueter` -> `plaquettaire`. Those were left in rather than dropped one by one, since the 2023 news is the held-out measure of what the guards miss; the 2024 news and Wikipedia guards already removed the variants they contain. On Common Voice the 7 new rewrites are of the same kind (`Rainwood` -> `Rinvoq`, `aphase` -> `aphasie`), 1 is a real fix (`champignistes` -> `champignonnistes`), and none changes the WER.
+- A first import let `cubis` -> `pubis`, `mélasses` -> `melas` (VoxPopuli) and `locals` -> `local` through, which is why one-word imported variants that are French words are now refused (312 variants, a few of them real fixes such as `ibuprofen`).
+
 ## Layout
 
 | path | content |
@@ -86,7 +124,7 @@ Real speech (2026-11-21, measured with Claude Code). The v2 model (int8 ONNX enc
 | `rejected/` | the candidates each v2 build rejected, with the reason, and `drug_asr_errors.json` (the misspellings the drug build started from); not published: they hold fragments of dataset transcripts and nothing reads them, so they stay local and gitignored |
 | `inputs/` | the author's `conflict_resolutions.tsv` (variants the learned files disagreed on), the hand-written `manual_fixes.tsv` and the generated `convention_fixes.tsv`, source of `manual_fix_rules.jsonl` |
 | `v1/` | the v1 outputs, kept for comparison: `drug_fix_rules.jsonl`, `term_fix_rules.jsonl` (dictionary + PARHAF + PARROT in one list) and the per-model `drug_asr_errors*.json` (their rejected lists stay local, like `rejected/`) |
-| `scripts/` | the build chain (01 to 07 and 09, plus 10 for the confusion groups, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
+| `scripts/` | the build chain (01 to 07 and 09, plus 10 for the confusion groups and 11 for the v1 import, see [scripts/README.md](scripts/README.md)), `08_build_lookup.py` and `apply_lookup.py` |
 | `tests/` | `test_drug_asr_rules.py` (the build scripts) and `test_lookup.py` (regex vs lookup equivalence, on synthetic texts; no real transcript is committed) |
 
 The build scripts read the corpus manifests, the drug lexicon and a few helpers from a [UltiMed-ASR-FR-v2-scripts](https://github.com/UltiMed-Org/UltiMed-ASR-FR-v2-scripts) checkout. By default they look for it next to this repository, in a folder still named `UltiMed-ASR-FR-v1-scripts`; set `ULTIMED_SCRIPTS_DIR` to point elsewhere. Applying the rules, building the lookups and `test_lookup.py` need nothing outside this repository.
@@ -144,16 +182,16 @@ The lookup files are about 7 times smaller than the regex files, because they dr
 
 | file | rules | keys | `not_after` rules | regex file (bytes) | lookup file (bytes) |
 |---|---|---|---|---|---|
-| `manual_fix_rules` | 2,059 | 2,156 | 0 | 810,058 | 121,389 |
-| `drug_fix_rules` | 2,447 | 5,057 | 20 | 1,153,644 | 152,505 |
-| `dictionary_fix_rules` | 18,261 | 43,575 | 396 | 10,079,406 | 1,376,358 |
+| `manual_fix_rules` | 2,060 | 2,160 | 0 | 810,536 | 121,464 |
+| `drug_fix_rules` | 4,046 | 20,971 | 47 | 2,868,349 | 439,675 |
+| `dictionary_fix_rules` | 34,357 | 154,931 | 693 | 25,671,288 | 3,889,360 |
 | `parhaf_fix_rules` | 2,172 | 4,146 | 35 | 1,076,131 | 136,574 |
 | `parrot_fix_rules` | 117 | 147 | 1 | 55,413 | 8,581 |
 | `acronyms_fix_rules` | 43 | 43 | 0 | 19,868 | 4,374 |
 
 ### How the lookups are built
 
-`uv run scripts/08_build_lookup.py rules/*_fix_rules.jsonl` writes `lookup/<name>.lookup.json` for the six rule files. Do not pass `rules/*.jsonl`: that glob also catches `confusion_groups.jsonl`, which is not a rule file and stops the build with `KeyError: 'variant'`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 25,099 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
+`uv run scripts/08_build_lookup.py rules/*_fix_rules.jsonl` writes `lookup/<name>.lookup.json` for the six rule files. Do not pass `rules/*.jsonl`: that glob also catches `confusion_groups.jsonl`, which is not a rule file and stops the build with `KeyError: 'variant'`. Nothing is reinterpreted: each rule's pattern is first rebuilt from its variants with the same functions that wrote it (`variant_pattern` in 02, the merge scaffolding of 03) and must equal the stored pattern byte for byte, so the keys describe exactly what the regex matches. A rule that does not rebuild stops the build instead of being approximated; none of the 42,795 v2 rules fails. The lookup records the SHA-256 of its source, and `05_build_manual_rules.py` and `07_build_dataset_rules.sh` write the lookup form each time they write rules.
 
 ### Equivalence
 

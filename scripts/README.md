@@ -280,6 +280,29 @@ uv run scripts/09_apply_resolutions.py rules/drug_fix_rules.jsonl rules/drug_fix
 uv run scripts/05_build_manual_rules.py
 ```
 
+## v1 rules imported (`11_import_v1_rules.py`, 2026-11-23)
+
+The owner asked to reuse the v1 rules with their replacements respelled to the current conventions, added to the v2 rules mined from the v2 model. `11_import_v1_rules.py` does it in one run and is the only place it happens; it reuses the build scripts' functions (02's `build_rules`, `guard_names`, `compile_rules`; 03's `merge_checked`; 04's `drop_unk_variants`; 09's `resolve`, the whole of 09 on a rule list, factored out of 09's `main` for this), never a copy. Steps, details in the script docstring:
+
+1. Respell each v1 replacement to the v2 labels: the labels' majority spelling of the whole replacement (or of each word) after folding case, accents, hyphens, spaces and apostrophes (`label_spellings`, `respell`), else the word must be a headword (01's lexicon with `--lexicon 01_dictionnary/original_dictionnary.jsonl`), else the rule goes (`no_v2_spelling`). Then 09's passes (`resolve`).
+2. Turn the v1 variants into a 01-style report (`v1_report`; an unmerged v1 rule keeps its count, a merged one counts 1 per variant) and run 02's `build_rules` on it with the v2 labels plus `--guard` (French Wikipedia 1M, French news 2024 1M) as real text, so every guard is the one a v2 build applies. Then `screen`: `v2_variant` (any v2 file already holds it: v2 wins), `noop`, `unk`, `charset` (a character 08 cannot key), `french_word_v1` (one-word variant with wordfreq Zipf >= 1.0, `V1_MAX_WORD_ZIPF`), then the INSEE `--names` title guard.
+3. `bad_variants`: the imported rules alone, one at a time, on the 602,776 labels and the v2 transcripts of every clip.
+4. Merge per replacement into the drug file (v1 drugs) or the dictionary file (v1 terms): `insert_ordered` puts each imported rule at its place in 02's order among the existing rules, then 03's `merge_checked` on the transcripts, labels and `--merge-text` (Wikipedia, held-out news 2023). 03's `merge_rules` now accepts an already merged rule as a member (its alternation is spliced in flat, so 08 still rebuilds the pattern). Provenance: `"source": "v1"` on a rule of imported variants only, `"v1_variants"` on a v2 rule that took some.
+5. `stack_offenders`: the six files in order on the labels and transcripts; an imported variant that fired on a rewritten label or on a transcript that came out worse than without the import is dropped and the check reruns (27 dropped on the first pass, 0 on the second).
+
+A rerun first strips what an earlier run added (`strip_imported`), so it always starts from the learned files: rerun it after 07 rebuilds them, then 08. Rejections go to `rejected/v1_import.rejected.jsonl` (local, like the other rejected lists).
+
+```bash
+L=.../parakeet-tdt-0.6b-v3-ultra-onnx/local
+uv run scripts/11_import_v1_rules.py --hyps full.blend70-onnx-fp32.hyp.jsonl \
+  --guard $L/wiki-sentences-ignore_backups/fr-wikipedia-1M.txt --guard $L/wiki-sentences-ignore_backups/fr-news-2024-1M.txt \
+  --names $L/names-ignore_backups/fr-names.txt \
+  --merge-text $L/wiki-sentences-ignore_backups/fr-wikipedia-1M.txt --merge-text $L/wiki-sentences-ignore_backups/fr-news-2023-100K.txt
+uv run scripts/08_build_lookup.py rules/*_fix_rules.jsonl
+```
+
+The run takes about 10 hours on this machine (the two merge checks over 2.1M texts are most of it). Counts, the measured effect and the 15 extra news rewrites are in the top-level README ("v1 rules imported"). Two owner rules were applied on the way through the durable inputs, not by editing `rules/`: `Diffu-K` is the only spelling (`diffuk`, `diffu k` in `inputs/manual_fixes.tsv`, run last, so it also respells what any learned or imported rule writes; `diéfuca` and `diffukat`, which v1 learned as `Diffu` and the respelling turned into `Diffu K`, decided in `conflict_resolutions.tsv`; `tests/test_lookup.py::test_diffu_k`). The `french_word_v1` and `charset` drops were added after the first run and applied to its output with the same functions (`drop_unk_variants`), so a rerun gives them directly. `tests/test_drug_asr_rules.py::test_import_v1_rules` checks the respelling (`acétoacétate` -> `acéto-acétate`), v2 winning a conflict, the label-rewrite and worse-transcript drops, the merge into an existing rule (08 can rebuild it) and the strip. Written with Claude Code.
+
 ## Confusion groups (`10_build_confusion_groups.py`, 2026-11-19)
 
 A regex maps one heard form to one replacement, so 02 drops every variant whose errors split between targets (`ambiguous`) or that the model also writes when it is right (`imprecise`). Those are the cases an acoustic second pass could decide from the audio: `étuximab` was `cetuximab` in two clips and `rituximab` in two others. `10_build_confusion_groups.py` exports them instead of losing them: every folded heard form (02's `_key`) with at least two observed targets, summed over the build folders it is given, one group per line in `rules/confusion_groups.jsonl`:
