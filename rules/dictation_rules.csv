@@ -48,4 +48,4 @@ c5b833e4-f4a0,", ","(?i)[.,?!;\s]*(?:vie?rgul(es?|as?|in)|viandules?|viagnules?)
 b8cf1d1d-1380,\n,"(?i)\s*(?:retours?\s+|all(?:er|ez)\s+)?[àa]\s+la\s+lignes?[.,?!;:\s]*", à la ligne ,\n
 7516e9dc-ea5e,\n,"(?i)\s*(?:sautes?|sceau)\sune\slignes?[.,?!;:\s]*", saute une ligne ,\n
 a6f92682-8234,\n\n,"(?i)\s*(?:saut|sceau)\sde\slignes?[.,?!;:\s]*", saut de ligne ,\n\n
-3f1c9a2e-7b4d,"    $1\u","(?i)[ \t]*(?:nouvel\s+)?alig?n[ée]as?[.,?!;:]*[ \t]*([^\w\n]*)","Nouvel alinéa - patrique","    - Patrique"
+3f1c9a2e-7b4d,"    $1\u","(?i)[ \t]*(?:nouvel\s+)?alig?n[ée]as?[ \t.,?!;:]*([^\w\n]*)","Nouvel alinéa - patrique","    - Patrique"
