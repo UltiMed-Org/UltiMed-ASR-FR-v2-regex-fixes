@@ -2,6 +2,9 @@
 
 Part of [UltiMed-Org](https://github.com/UltiMed-Org), which lists every UltiMed repository, dataset and model.
 
+> [!WARNING]
+> **Use these v2 rules with the [v1 model](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-UltiMed-v1-onnx) until v3 is out.** The [v2 model](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-UltiMed-v2-onnx) is experimental: on real human dictation it does worse than v1 (example: "la prescription venlafaxine" comes out as "la prescription devant l'accès"). These v2 rules are still the ones to use: they are a superset of the v1 rules (the v1 rule files were imported, see "v1 rules imported" below), so they fix the v1 model's known mistakes too. The v1 and v2 models are drop-in replacements for each other (same architecture, tokenizer and file layout, only the weights differ). The v2 model numbers below are kept as they were measured.
+
 > [!IMPORTANT]
 > **Want faster improvements?** This project is entirely self-funded on my minimum-wage salary, and every training run competes for a single consumer GPU. If you or your organisation can donate an **RTX 5090**, or the money to buy one second-hand, it would directly speed up the next versions of the dataset and the fine-tuned models. Reach out via [olicorne.org](https://olicorne.org) or open an issue on this repository.
 
